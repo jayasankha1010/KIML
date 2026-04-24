@@ -1,0 +1,1 @@
+This repository contains modified, hard-forked versions of SPEOS and Mantis. All original licenses apply to their respective directories.
