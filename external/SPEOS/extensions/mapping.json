@@ -5,7 +5,7 @@
         "features_file": "",
         "function": "test_preprocess_labels",
         "args": [
-            "./../../../data/kiml_data/diseases/DEE-2022_09.txt"
+            "./../../data/kiml_data/diseases/DEE-2022_09.txt"
         ],
         "kwargs": {}
     }

@@ -9,6 +9,8 @@ from speos.utils.logger import setup_logger
 from speos.utils.config import Config
 import speos.utils.nn_utils as nn_utils
 import speos.layers as layers
+from torch.utils.checkpoint import checkpoint
+from torch.utils.checkpoint import checkpoint_sequential
 
 
 class LINKX(nn.Module):
@@ -92,7 +94,6 @@ class LINKXLayer(nn.Module):
         nn.init.xavier_normal_(self.weights)
 
     def forward(self, out_x, out_a):
-
         concat = torch.hstack((out_a, out_x))
         mat = torch.mm(concat, self.weights)
         mat += out_x
@@ -147,7 +148,8 @@ class GeneNetwork(nn.Module):
             if key == "kwargs":
                 for kwarg_key, kwarg_value in value.items():
                     if isinstance(kwarg_value, str):
-                        if kwarg_value.startswith("nn.") or kwarg_value.startswith("pyg_nn.") or kwarg_value.startswith("aggr."):
+                        if kwarg_value.startswith("nn.") or kwarg_value.startswith("pyg_nn.") or kwarg_value.startswith(
+                                "aggr."):
                             config[key][kwarg_key] = eval("".join(kwarg_value.split()))
             elif isinstance(value, Config):
                 self.initialize_kwargs(value)
@@ -163,25 +165,39 @@ class GeneNetwork(nn.Module):
         return act
 
     def make_mp(self):
+        print("---make_mp---")
         self.graph_message_passing = self.gcn_message_passing
 
         mp_list = []
         flow_list = []
 
-        for i in range(self.gcnconv_num_layers):
+        for i in range(self.gcnconv_num_layers):  #parameter naming is confusing
             mp_list.append(self.get_mp_layer(i))
-            flow_list.append('x, edge_index -> x')
+            if self.gcnconv_parameters["type"] == "rgat":
+                flow_list.append('x, edge_index, edge_type -> x')
+            elif self.gcnconv_parameters["type"] == "filmedge" or self.gcnconv_parameters["type"] == "filmedge_2":
+                flow_list.append('x, edge_index, train_edge -> x')
+            else:
+                flow_list.append('x, edge_index -> x')
             mp_list.append(self.get_act())
             flow_list.append('x -> x')
             mp_list.append(self.get_mp_norm())
             flow_list.append('x -> x')
 
         if len(mp_list) > 0:
-            self.mp = pyg_nn.Sequential('x, edge_index', [(layer, flow) for layer, flow in zip(mp_list, flow_list)])
+            if self.gcnconv_parameters["type"] == "rgat":
+                self.mp = pyg_nn.Sequential('x, edge_index, edge_type',
+                                            [(layer, flow) for layer, flow in zip(mp_list, flow_list)])
+            elif self.gcnconv_parameters["type"] == "filmedge" or self.gcnconv_parameters["type"] == "filmedge_2":
+                self.mp = pyg_nn.Sequential('x, edge_index, train_edge',
+                                            [(layer, flow) for layer, flow in zip(mp_list, flow_list)])
+            else:
+                self.mp = pyg_nn.Sequential('x, edge_index', [(layer, flow) for layer, flow in zip(mp_list, flow_list)])
         else:
             self.mp = None
 
     def get_mp_layer(self, i):
+        print("---get_mp---")
         kwargs = self.config.model.mp.kwargs
         if self.gcnconv_parameters["type"] == "sage":
             mp_layer = pyg_nn.SAGEConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"], **kwargs)
@@ -190,7 +206,8 @@ class GeneNetwork(nn.Module):
         elif self.gcnconv_parameters["type"] == "fac":
             mp_layer = pyg_nn.FAConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"], **kwargs)
         elif self.gcnconv_parameters["type"] == "tag":
-            mp_layer = pyg_nn.TAGConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"], K=self.config.model.mp.k, **kwargs)
+            mp_layer = pyg_nn.TAGConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"],
+                                      K=self.config.model.mp.k, **kwargs)
         elif self.gcnconv_parameters["type"] == "cheb":
             self.cheb_kwargs.update(kwargs)
             kwargs = self.cheb_kwargs
@@ -201,27 +218,31 @@ class GeneNetwork(nn.Module):
             mp_layer = pyg_nn.GCNConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"], **kwargs)
         elif self.gcnconv_parameters["type"] == "gin":
             mp_layer = pyg_nn.GINConv(nn=torch.nn.Sequential(
-                    pyg_nn.Linear(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"]),
-                    torch.nn.ReLU(),
-                    pyg_nn.Linear(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"]),
-                    torch.nn.ReLU()
-                ), **kwargs)
+                pyg_nn.Linear(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"]),
+                torch.nn.ReLU(),
+                pyg_nn.Linear(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"]),
+                torch.nn.ReLU()
+            ), **kwargs)
         elif self.gcnconv_parameters["type"] == "gat":
             self.gat_kwargs.update(kwargs)
             kwargs = self.gat_kwargs
 
             if self.nheads is None:
-                raise ValueError("The number of attention heads defaults to None, please specify the number of heads explicitely in the config using nheads keyword under mp.")
+                raise ValueError(
+                    "The number of attention heads defaults to None, please specify the number of heads explicitely in the config using nheads keyword under mp.")
             if i == self.gcnconv_num_layers - 1:
                 # if its the last layer, use only one head (dim_out = dim_hid) and dont concat
-                mp_layer = pyg_nn.GATConv(self.gcnconv_parameters["dim"] * self.nheads, self.gcnconv_parameters["dim"], heads=1, concat=False, **kwargs)
+                mp_layer = pyg_nn.GATConv(self.gcnconv_parameters["dim"] * self.nheads, self.gcnconv_parameters["dim"],
+                                          heads=1, concat=False, **kwargs)
             elif i == 0:
                 # if its the first layer, blow dimensionality up (dim_out = dim_hid * nheads)
-                mp_layer = pyg_nn.GATConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"], heads=self.nheads, **kwargs)
+                mp_layer = pyg_nn.GATConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"],
+                                          heads=self.nheads, **kwargs)
             elif i < self.gcnconv_num_layers - 1:
                 # if its anything between the first or the last layer, keep dim_in = dim_out = dim_hid * n_heads
-                mp_layer = pyg_nn.GATConv(self.gcnconv_parameters["dim"] * self.nheads, self.gcnconv_parameters["dim"] * self.nheads, heads=1, concat=True, **kwargs)
-            
+                mp_layer = pyg_nn.GATConv(self.gcnconv_parameters["dim"] * self.nheads,
+                                          self.gcnconv_parameters["dim"] * self.nheads, heads=1, concat=True, **kwargs)
+
         elif self.gcnconv_parameters["type"] == "gcn2":
             mp_layer = pyg_nn.GCN2Conv(self.gcnconv_parameters["dim"],
                                        alpha=self.gcnconv_parameters["alpha"],
@@ -230,11 +251,12 @@ class GeneNetwork(nn.Module):
                                        add_self_loops=False,
                                        **kwargs)
 
-        elif self.gcnconv_parameters["type"] in ["rgcn", "rgat", "film", "filmtag", "rgattag", "rtag"]:
+        elif self.gcnconv_parameters["type"] in ["rgcn", "rgat", "film", "filmtag", "rgattag", "rtag", "filmedge", "filmedge_2", ]:
 
             if self.num_adjacencies == 1 and not self.config.input.force_multigraph:
                 logger = setup_logger(self.config, __name__)
-                logger.warning("Requested {} even though we have only 1 Adjacency. Resetting to {}".format(self.gcnconv_parameters["type"], self.reset_rgcn_to))
+                logger.warning("Requested {} even though we have only 1 Adjacency. Resetting to {}".format(
+                    self.gcnconv_parameters["type"], self.reset_rgcn_to))
                 self.gcnconv_parameters["type"] = self.reset_rgcn_to
                 return self.get_mp_layer(i)
 
@@ -243,34 +265,54 @@ class GeneNetwork(nn.Module):
                 kwargs = self.rgcn_kwargs
 
             if self.gcnconv_parameters["type"] == "rgcn":
-                mp_layer = pyg_nn.RGCNConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"], self.num_adjacencies, **kwargs)
+                mp_layer = pyg_nn.RGCNConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"],
+                                           self.num_adjacencies, **kwargs)
             if self.gcnconv_parameters["type"] == "rtag":
-                mp_layer = layers.RTAGConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"], self.num_adjacencies, **kwargs)
+                mp_layer = layers.RTAGConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"],
+                                           self.num_adjacencies, **kwargs)
             elif self.gcnconv_parameters["type"] == "rgat":
-                mp_layer = layers.RGATConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"], self.num_adjacencies, **kwargs)
+                mp_layer = pyg_nn.RGATConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"],
+                                           self.num_adjacencies, **kwargs)
             elif self.gcnconv_parameters["type"] == "rgattag":
-                mp_layer = layers.RGATTAGConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"], self.num_adjacencies, **kwargs)
+                mp_layer = layers.RGATTAGConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"],
+                                              self.num_adjacencies, **kwargs)
             elif self.gcnconv_parameters["type"] == "film":
-                mp_layer = pyg_nn.FiLMConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"], self.num_adjacencies, **kwargs)
+                mp_layer = pyg_nn.FiLMConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"],
+                                           self.num_adjacencies, **kwargs)
             elif self.gcnconv_parameters["type"] == "filmtag":
-                mp_layer = layers.FiLMTAGConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"], self.num_adjacencies, **kwargs)
+                mp_layer = layers.FiLMTAGConv(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"],
+                                              self.num_adjacencies, **kwargs)
             elif self.gcnconv_parameters["type"] == "mlpfilm":
-                mp_layer = layers.MLPFiLM(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"], self.num_adjacencies, **kwargs)
+                mp_layer = layers.MLPFiLM(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"],
+                                          self.num_adjacencies, **kwargs)
             elif self.gcnconv_parameters["type"] == "filmfilm":
-                mp_layer = layers.FiLMFiLM(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"], self.num_adjacencies, **kwargs)
+                mp_layer = layers.FiLMFiLM(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"],
+                                           self.num_adjacencies, **kwargs)
+            elif self.gcnconv_parameters["type"] == "filmedge":
+                mp_layer = layers.FiLMEdge(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"],
+                                           self.num_adjacencies, **kwargs)
+            elif self.gcnconv_parameters["type"] == "filmedge_2":
+                mp_layer = layers.FiLMEdge2(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"],
+                                           self.num_adjacencies, **kwargs)
+
 
         else:
             try:
                 mp_layer_uninitialized = getattr(pyg_nn, self.gcnconv_parameters["type"])
             except AttributeError:
-                raise ValueError("Could not import layer {} from pyg_nn. Maybe stick to the layers that are predefined or check spelling.".format(self.gcnconv_parameters["type"]))
+                raise ValueError(
+                    "Could not import layer {} from pyg_nn. Maybe stick to the layers that are predefined or check spelling.".format(
+                        self.gcnconv_parameters["type"]))
             try:
-                mp_layer = mp_layer_uninitialized(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"], num_relations=self.num_adjacencies, **kwargs)
+                mp_layer = mp_layer_uninitialized(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"],
+                                                  num_relations=self.num_adjacencies, **kwargs)
             except TypeError:
                 try:
-                    mp_layer = mp_layer_uninitialized(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"], **kwargs)
+                    mp_layer = mp_layer_uninitialized(self.gcnconv_parameters["dim"], self.gcnconv_parameters["dim"],
+                                                      **kwargs)
                 except Exception:
-                    raise ValueError("Could not find layer instructions for type {}".format(self.gcnconv_parameters["type"]))
+                    raise ValueError(
+                        "Could not find layer instructions for type {}".format(self.gcnconv_parameters["type"]))
 
         return mp_layer
 
@@ -298,7 +340,7 @@ class GeneNetwork(nn.Module):
             post_mp_list.append(self.get_act())
             start_factor = 1
 
-        post_mp_list.append(pyg_nn.Linear(self.dim_hid, self.dim_hid // 2))
+        post_mp_list.append(pyg_nn.Linear(self.dim_hid * start_factor, self.dim_hid // 2))
         post_mp_list.append(self.get_act())
         post_mp_list.append(pyg_nn.Linear(self.dim_hid // 2, self.output_dim))
 
@@ -316,13 +358,21 @@ class GeneNetwork(nn.Module):
     def regularization(self):
         return torch.Tensor((0,))
 
-    def forward(self, x, edge_index, edge_weight=None):
+    def forward(self, x, edge_index, edge_weight=None, edge_type=None, train_edge=False):
+        # print("--forward function--")
         # pre message passing
+        # print("-pre message passing--")
         x_pre = self.pre_mp(x)
+        # print("--message passing--")
 
         # apply graph convolutions
         if self.mp is not None:
-            x = self.mp(x_pre, edge_index)
+            if self.gcnconv_parameters["type"] == "rgat":
+                x = self.mp(x_pre, edge_index, edge_type)
+            elif self.gcnconv_parameters["type"] == "filmedge" or self.gcnconv_parameters["type"] == "filmedge_2":
+                x = self.mp(x_pre, edge_index, train_edge)
+            else:
+                x = self.mp(x_pre, edge_index)
             self.final_conv_acts = x
 
             if self.config.model.skip_mp:
@@ -333,9 +383,10 @@ class GeneNetwork(nn.Module):
         else:
             x = x_pre
 
+        # print("--post message passing--")
         # post message passing
         x = self.post_mp(x)
-
+        # print("--returning output of forward funciton---")
         return x
 
     def add_norm_layer(self, ndim):
@@ -383,17 +434,23 @@ class GeneNetwork(nn.Module):
             flow_list.append('x -> x')
             layer_list.append(layer)
 
+        flow_list.append('x -> x')
+        layer_list.append(ExplanationOutputLayer())
+
         return pyg_nn.Sequential('x, edge_index', [(layer, flow) for layer, flow in zip(layer_list, flow_list)])
 
 
 class RelationalGeneNetwork(GeneNetwork):
     def __init__(self, config, dim, num_adjacencies):
-        if config.model.mp.type not in ["rgcn", "rgat", "film", "filmtag", "rgattag", "rtag"]:
+        if config.model.mp.type not in ["rgcn", "rgat", "film", "filmtag", "rgattag", "rtag", "filmedge", "filmedge_2"]:
+            logger = setup_logger(config, __name__)
+            logger.warning("Requested {} even though we have multiple Adjacencies. Resetting to {}".format(
+                config.model.mp.type, "rgcn"))
             config.model.mp.type = "rgcn"
         super(RelationalGeneNetwork, self).__init__(config, dim, num_adjacencies)
         self.has_cache = False
 
-    def forward(self, x: dict, edge_index: dict, cached=True):
+    def forward(self, x: dict, edge_index: dict, cached=True, edge_type=None, train_edge=False):
         if isinstance(x, dict):
             x = list(x.values())[0]  # we have only one node type anyway, no need for keeping in a dict
         if isinstance(edge_index, dict):
@@ -403,9 +460,10 @@ class RelationalGeneNetwork(GeneNetwork):
                     self.has_cache = True
                 edge_index = self.edge_index
             else:
-                edge_index, _ = nn_utils.typed_edges_to_sparse_tensor(x, edge_index)
+                if self.gcnconv_parameters["type"] != "rgat":
+                    edge_index, _ = nn_utils.typed_edges_to_sparse_tensor(x, edge_index)
 
-        return super().forward(x, edge_index)
+        return super().forward(x, edge_index, edge_type=edge_type, train_edge=train_edge)
 
 
 class FCNN(nn.Module):
@@ -436,6 +494,7 @@ class FCNN(nn.Module):
 
 class SimpleGCN(nn.Module):
     """ A simple GCN architecture for debugging """
+
     def __init__(self, input_dim):
         super().__init__()
         self.output_dim = 1
@@ -450,6 +509,7 @@ class SimpleGCN(nn.Module):
 
 class SimpleHeteroGCN(nn.Module):
     """ A simple GCN architecture for debugging """
+
     def __init__(self, input_dim):
         super().__init__()
         self.output_dim = 1
@@ -461,3 +521,11 @@ class SimpleHeteroGCN(nn.Module):
         x = self.conv1(x, edge_index).relu()
         x = self.conv2(x, edge_index).relu()
         return x
+
+
+class ExplanationOutputLayer(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, x):
+        return torch.hstack((x, -1 * x))

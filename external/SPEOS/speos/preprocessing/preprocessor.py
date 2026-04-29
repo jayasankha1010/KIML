@@ -15,7 +15,7 @@ class PreProcessor:
                  config,
                  mapping_list: list,
                  adjacency_list: list,
-                 translation_table: str = "data/hgnc_official_list.tsv",
+                 translation_table: str = "hgnc/hgnc_official_list.tsv",
                  expression_files=["data/GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_median_tpm.gct",
                                    "data/human_protein_atlas_rna_blood_cell.tsv"],
                  extension_inputs: str = "./extensions/datasets.json"):
@@ -111,7 +111,7 @@ class PreProcessor:
 
         node_list = [(i, {self.entrez_key: series[self.entrez_key], self.ensembl_key: series[self.ensembl_key], self.hgnc_key:series[self.hgnc_key], "y": 0, "x": []})
                 for i, series in self.translation_table.iterrows()]
-        all_genes = np.loadtxt("./../../../../data/kiml_data/ahbd/adult_expression.txt", dtype=object)[:, 0]
+        all_genes = np.loadtxt("./../../data/kiml_data/ahbd/adult_expression.txt", dtype=object)[:, 0]
         all_genes = set(all_genes)
         print(len(all_genes))
         translation_genes = self.translation_table["hgnc"].tolist()

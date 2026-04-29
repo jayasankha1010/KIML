@@ -5,7 +5,7 @@
     "function": "preprocess_mydata_expression",
     "args": [],
     "kwargs": {
-      "path": "data/expression/child_expression.txt"
+      "path": "./../../data/kiml_data/ahbd/child_expression.txt"
     }
   },
   {
@@ -14,7 +14,7 @@
     "function": "preprocess_mydata_expression",
     "args": [],
     "kwargs": {
-      "path": "data/expression/prebirth_expression.txt"
+      "path": "./../../data/kiml_data/ahbd/prebirth_expression.txt"
     }
   }
 ]

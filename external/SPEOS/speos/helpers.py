@@ -95,6 +95,7 @@ class CheckPointer(Companion):
                 os.makedirs(os.path.dirname(self.path))
 
     def step(self, value):
+        print("helper step")
         self._raw_history.append(value)
         self.history = self._raw_history[:]
 

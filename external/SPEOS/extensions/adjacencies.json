@@ -2,7 +2,7 @@
   {
     "name": "covaries",
     "type": "ppi",
-    "file_path": "./../../../data/kiml_data/networks/gene_gene_covaries.txt",
+    "file_path": "./../../data/kiml_data/networks/gene_gene_covaries.txt",
     "source": "source",
     "target": "target",
     "sep": " ",
@@ -13,7 +13,7 @@
   {
     "name": "interacts",
     "type": "ppi",
-    "file_path": "./../../../data/kiml_data/networks/gene_gene_interacts.txt",
+    "file_path": "./../../data/kiml_data/networks/gene_gene_interacts.txt",
     "source": "source",
     "target": "target",
     "sep": " ",
@@ -24,7 +24,7 @@
   {
     "name": "regulates",
     "type": "ppi",
-    "file_path": "./../../../data/kiml_data/networks/gene_gene_regulates.txt",
+    "file_path": "./../../data/kiml_data/networks/gene_gene_regulates.txt",
     "source": "source",
     "target": "target",
     "sep": " ",
@@ -35,7 +35,7 @@
   {
     "name": "biological_process",
     "type": "ppi",
-    "file_path": "./../../../data/kiml_data/networks/network_biological_process.txt",
+    "file_path": "./../../data/kiml_data/networks/network_biological_process.txt",
     "source": "source",
     "target": "target",
     "sep": " ",
@@ -46,7 +46,7 @@
   {
     "name": "pathway",
     "type": "ppi",
-    "file_path": "./../../../data/kiml_data/networks/network_pathway.txt",
+    "file_path": "./../../data/kiml_data/networks/network_pathway.txt",
     "source": "source",
     "target": "target",
     "sep": " ",
@@ -57,7 +57,7 @@
   {
     "name": "reactome_paths",
     "type": "ppi",
-    "file_path": "./../../../data/kiml_data/networks/reactome_pathways.txt",
+    "file_path": "./../../data/kiml_data/networks/reactome_pathways.txt",
     "source": "source",
     "target": "target",
     "sep": " ",

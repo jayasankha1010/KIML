@@ -3,7 +3,7 @@ from speos.models import ModelBootstrapper
 from speos.preprocessing.datasets import DatasetBootstrapper
 from speos.preprocessing.mappers import GWASMapper, AdjacencyMapper
 
-from speos.helpers import CheckPointer
+from speos.helpers_ import CheckPointer
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt

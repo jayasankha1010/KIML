@@ -16,7 +16,7 @@ import traceback
 class PostProcessor:
     """Reads a results file and generates reports and analyses on it. The results file must contain identifers, labels and predictions per gene"""
 
-    def __init__(self, config, translation_table="./data/hgnc_official_list.tsv"):
+    def __init__(self, config, translation_table="./hgnc/hgnc_official_list.tsv"):
         self.config = config
         self.logger_args = [config, __name__]
         self.num_runs_for_random_experiments = 1000

@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import csv
 
 from speos.explanation import InputExplainer
 from speos.preprocessing.datasets import DatasetBootstrapper
@@ -38,7 +39,8 @@ class Experiment:
         logger.info("Starting run {}".format(self.name))
         logger.info("Using device(s): {}".format(self.devices))
 
-        self.dataset = DatasetBootstrapper(holdout_size=config.input.holdout_size, name=self.name, config=self.config).get_dataset()
+        self.dataset = DatasetBootstrapper(holdout_size=config.input.holdout_size, name=self.name,
+                                           config=self.config).get_dataset()
 
         node_data = self.dataset.data
 
@@ -47,6 +49,7 @@ class Experiment:
         else:
             input_dim = node_data.x.shape[1]
 
+        config.device = self.devices[0]
         self.model = ModelBootstrapper(
             config, input_dim, self.dataset.num_relations).get_model()
 
@@ -56,15 +59,16 @@ class Experiment:
 
         if self.config.crossval.mode == "complex":
             n_folds = self.config.crossval.n_folds * \
-                (self.config.crossval.n_folds + 1)
+                      (self.config.crossval.n_folds + 1)
         else:
             n_folds = self.config.crossval.n_folds
-        
-        self.resultshandler = ResultsHandler(file_path=os.path.join(self.config.inference.save_dir, self.config.name + ".h5"),
-                                             n_folds=n_folds,
-                                             shape=node_data.x.shape,
-                                             explanation=self.config.inference.input_explain,
-                                             index=self.dataset.node_df["hgnc"].tolist()) \
+
+        self.resultshandler = ResultsHandler(
+            file_path=os.path.join(self.config.inference.save_dir, self.config.name + ".h5"),
+            n_folds=n_folds,
+            shape=node_data.x.shape,
+            explanation=self.config.inference.input_explain,
+            index=self.dataset.node_df["hgnc"].tolist()) \
             if resultshandler is None else resultshandler
 
         if resultshandler is None:
@@ -74,8 +78,11 @@ class Experiment:
             logger.info("Using existing ResultsHandler pointing to {}".format(
                 self.resultshandler.file_path))
 
-        logger.info("Received data with {} train positives, {} train negatives, {} val positives, {} val negatives, {} test positives and {} test negatives".format(
-            *[truth[mask].sum().long().item() for mask in [node_data.train_mask, node_data.val_mask, node_data.test_mask] for truth in [node_data.y, 1 - node_data.y]]))
+        logger.info(
+            "Received data with {} train positives, {} train negatives, {} val positives, {} val negatives, {} test positives and {} test negatives".format(
+                *[truth[mask].sum().long().item() for mask in
+                  [node_data.train_mask, node_data.val_mask, node_data.test_mask] for truth in
+                  [node_data.y, 1 - node_data.y]]))
 
         input_type = "logit" if self.config.model.loss == "bce" else "prob"
 
@@ -93,7 +100,8 @@ class Experiment:
                 node_data, self.model, self.dataset.preprocessor.get_feature_names(), config)
 
             self.scheduler = LRScheduler(self.model.optimizers, mode=config.scheduler.mode,
-                                        factor=config.scheduler.factor, patience=config.scheduler.patience, limit=config.scheduler.limit)
+                                         factor=config.scheduler.factor, patience=config.scheduler.patience,
+                                         limit=config.scheduler.limit)
 
             self.earlystopper = EarlyStopper(patience=self.config.es.patience, mode=self.config.es.mode)
             self.max_epochs = config.training.max_epochs
@@ -101,8 +109,7 @@ class Experiment:
             self.max_epochs = 1
 
         self.checkpointer = CheckPointer(
-                self.model, self.config.model.save_dir + self.name, mode=config.es.mode)
-
+            self.model, self.config.model.save_dir + self.name, mode=config.es.mode)
 
         self.n_neighbors = []
 
@@ -121,15 +128,18 @@ class Experiment:
 
         run_epochs = self.max_epochs if epochs is None else epochs
 
+        logger.info("Starting epochs for {} iterations".format(run_epochs))
         for epoch in range(run_epochs):
             self.epoch = epoch
 
-            logger.info("Epoch {}".format(epoch))
-            self.train()
+            logger.info("Training for Epoch {}".format(epoch))
+            self.train(epoch=epoch)
 
             if torch.sum(self.data.val_mask) > 0:
+                logger.info("target is val")
                 target = "val"
             else:
+                logger.info("target is train")
                 target = "train"
 
             self.eval(target)
@@ -156,16 +166,16 @@ class Experiment:
         if self.config.model.plot:
             self.eval_and_plot()
 
-    def train(self):
+    def train(self, epoch=None):
         """
             Runs one training step.
         """
-        self.train_out, loss = self.model.step(self.data, self.data.train_mask)
-
+        
+        self.train_out, loss = self.model.step(self.data, self.data.train_mask, epoch=epoch)
         self.writer.add_scalar('Loss/train', loss, self.epoch)
 
         if self.model.requires_sgd:
-        # monitor LR decay
+            # monitor LR decay
             for i, optimizer in enumerate(self.model.optimizers):
                 for param_group in optimizer.param_groups:
                     lr = float(param_group['lr'])
@@ -182,6 +192,7 @@ class Experiment:
         self.writer.add_scalar('Paramerers/AUPRC train', auprc, self.epoch)
 
         if self.tensorboard and self.epoch % 50 == 0:
+            print("---tensorboard---")
             self.document_distributions(probability, self.data.y[self.data.train_mask].detach(
             ).cpu().bool(), title="train Discriminator")
             class_predictions = torch.sigmoid(
@@ -190,7 +201,6 @@ class Experiment:
                 self.train_out[0, :].squeeze()).detach().cpu().bool(), title="train Classifier")
 
         logger = setup_logger(self.config, self.logger_name)
-        logger.info("Training Loss: {}".format(loss))
 
     def eval(self, target="val"):
         """
@@ -218,13 +228,14 @@ class Experiment:
             self.val_out[-1, :].squeeze().detach().cpu().numpy(), target)
 
         probability, prediction, accuracy, recall, precision, auroc, auprc, f1, mrr, mr = self.metrics.get_metrics(
-            "probability", "prediction", "accuracy", "recall", "precision", "auroc", "auprc", "f1", "mrr_filtered", "mean_rank_filtered")
+            "probability", "prediction", "accuracy", "recall", "precision", "auroc", "auprc", "f1", "mrr_filtered",
+            "mean_rank_filtered")
 
         self.recall = recall
         # if val set has only positives, use composite f1, else use normal f1
         if self.data.y[self.data.val_mask].sum() == self.data.val_mask.sum():
             self.checkpoint_on = 2 * (self.train_precision * self.recall) / (
-                self.train_precision + self.recall) if self.train_precision is not None else self.recall
+                    self.train_precision + self.recall) if self.train_precision is not None else self.recall
         else:
             self.checkpoint_on = self.metrics.get_metrics(
                 self.config.es.metric)[0]
@@ -235,8 +246,9 @@ class Experiment:
                 'Paramerers/{} eval'.format(self.config.es.metric), self.checkpoint_on, self.epoch)
 
         logger = setup_logger(self.config, self.logger_name)
-        logger.info("Eval Loss: {}, Accuracy: {}, Recall: {}, Precision: {}, AUROC: {}, AUPRC: {}, F1: {}, MRR: {}, MR: {}, Target: {}".format(
-            loss, accuracy, recall, precision, auroc, auprc, f1, mrr, mr, target))
+        logger.info(
+            "Eval Loss: {}, Accuracy: {}, Recall: {}, Precision: {}, AUROC: {}, AUPRC: {}, F1: {}, MRR: {}, MR: {}, Target: {}".format(
+                loss, accuracy, recall, precision, auroc, auprc, f1, mrr, mr, target))
 
         return self.data.y[mask].detach().cpu().numpy().astype(np.uint8), prediction, probability
 
@@ -256,28 +268,83 @@ class Experiment:
             pass
 
     def eval_and_plot(self):
-        for name, mask in zip(("train", "val"), [self.data.train_mask, self.data.val_mask]):
+        splits = [("train", self.data.train_mask),
+              ("val", self.data.val_mask),
+              ("test", self.data.test_mask),
+              ("all", torch.ones_like(self.data.test_mask, dtype=torch.bool))]
+        
+        experiment_name = self.name.split("_")[0]
+        os.makedirs(self.config.model.save_dir, exist_ok=True)
+        metrics_file = os.path.join(
+            self.config.model.save_dir,
+            f"{experiment_name}_metrics.tsv"
+        )
+        os.makedirs(self.config.model.plot_dir, exist_ok=True)
+
+        # Check if the TSV file exists
+        file_exists = os.path.isfile(metrics_file)
+
+        # Prepare the header and a list to hold the new row data
+        header = ["Run Name", "Split", "Accuracy", "Recall", "Precision", "AUROC", "AUPRC", "F1", "MRR", "Mean Rank"]
+        new_rows = []
+        for name, mask in splits:
             # skip empty splits
             if torch.sum(mask) == 0:
                 continue
 
             fig = plt.figure()
-            fig.add_subplot(1, 1, 1)
+            ax = fig.add_subplot(1, 1, 1)
 
             self.eval(target=name)
             self.metrics.update(
                 self.val_out[-1, :].squeeze().detach().cpu().numpy(), name)
+            
+            # Compute metrics
+            (probability, prediction, accuracy, recall, precision, 
+            auroc, auprc, f1, mrr, mr) = self.metrics.get_metrics(
+                "probability", "prediction", "accuracy", "recall", "precision", 
+                "auroc", "auprc", "f1", "mrr_filtered", "mean_rank_filtered"
+            )
 
-            pred_proba = self.metrics.get_metrics("probability")[0]
+            # Add new row to the list
+            run_name = self.name  # Assuming `self.name` identifies the run uniquely
+            new_rows.append([run_name, name, accuracy, recall, precision, auroc, auprc, f1, mrr, mr])
 
             class_proba = [
                 "Mendelian" if y > 0.5 else "Unknown" for y in self.data.y[mask].detach().cpu().numpy().squeeze()]
 
-            sns.violinplot(y=pred_proba, x=class_proba, cut=0)
+            sns.violinplot(y=probability, x=class_proba, cut=0, ax=ax)
+            
+            # Add titles and labels
+            ax.set_title(f"Predicted Probability Distribution ({name.capitalize()} Set)")
+            ax.set_xlabel("True Class")
+            ax.set_ylabel("Predicted Probability")
+            
+            try:
+                os.makedirs(self.config.model.plot_dir)
+            except FileExistsError:
+                pass
 
             fig.savefig(os.path.join(self.config.model.plot_dir,
-                        "violin_{}_{}.png".format(name, self.name)))
+                                     "violin_{}_{}.png".format(name, self.name)))
             fig.clf()
+            
+            # Writing metrics to the fils
+            print("Violin plots saved.")
+            
+        # Write to the TSV file
+        with open(metrics_file, mode="a" if file_exists else "w", newline="") as f:
+            print("Appending to the plot metrics.tsv file")
+            writer = csv.writer(f, delimiter="\t")
+            
+            # Write the header only if the file is new
+            if not file_exists:
+                writer.writerow(header)
+            
+            # Write the new rows
+            writer.writerows(new_rows)
+            
+            
 
     def balance_losses(self, losses):
         """deprectaed, moved into the model class"""
@@ -340,10 +407,12 @@ class Experiment:
                     assert device in available_cuda_devices
 
             except AssertionError:
-                logger.error("Specified cuda device(s) {} not in available cuda device(s): {}. Check Spelling or Numbering".format(
-                    cuda, available_cuda_devices))
-                raise ValueError("Specified cuda device(s) {} not in available cuda device(s): {}. Check Spelling or Numbering".format(
-                    cuda, available_cuda_devices))
+                logger.error(
+                    "Specified cuda device(s) {} not in available cuda device(s): {}. Check Spelling or Numbering".format(
+                        cuda, available_cuda_devices))
+                raise ValueError(
+                    "Specified cuda device(s) {} not in available cuda device(s): {}. Check Spelling or Numbering".format(
+                        cuda, available_cuda_devices))
         else:
             logger.info(
                 "CUDA is set to {}, using cpu as fallback".format(cuda))
@@ -423,7 +492,6 @@ class InferenceEngine(Experiment):
         results_df["test"] = self.data.test_mask.detach(
         ).cpu().numpy().astype(np.int8)
         self.resultshandler.add_results(results_df, name=self.name)
-        
 
         if self.input_explain:
             explain_df = pd.DataFrame(data=attributions.numpy(
