@@ -1,12 +1,21 @@
-captum
-networkx
-h5py
-igraph
-matplotlib
-seaborn
-statsmodels
-scikit-learn
-pandas
-tensorboard
-pyyaml
-class-resolver
+name: kiml_speos
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pytorch
+  - pytorch-scatter
+  - pytorch-sparse
+  - pyg
+  - captum
+  - numpy<2.0
+  - pandas
+  - scipy
+  - scikit-learn
+  - networkx
+  - h5py
+  - anndata
+  - scanpy
+  - umap-learn
+  - tqdm
+  - pyyaml

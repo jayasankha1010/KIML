@@ -1,0 +1,11 @@
+[
+  {
+    "name": "PubmedEmbeddings2022",
+    "identifier": "hgnc",
+    "function": "preprocess_mydata_expression",
+    "args": [],
+    "kwargs": {
+      "path": "data/pubmed_embeddings/pubmed_embeddings_rearranged_2022_09.txt"
+    }
+  }
+]

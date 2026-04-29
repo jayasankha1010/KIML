@@ -1,1 +1,68 @@
-[]
+[
+  {
+    "name": "covaries",
+    "type": "ppi",
+    "file_path": "./../../../data/kiml_data/networks/gene_gene_covaries.txt",
+    "source": "source",
+    "target": "target",
+    "sep": " ",
+    "symbol": "hgnc",
+    "weight": "None",
+    "directed": false
+  },
+  {
+    "name": "interacts",
+    "type": "ppi",
+    "file_path": "./../../../data/kiml_data/networks/gene_gene_interacts.txt",
+    "source": "source",
+    "target": "target",
+    "sep": " ",
+    "symbol": "hgnc",
+    "weight": "None",
+    "directed": false
+  },
+  {
+    "name": "regulates",
+    "type": "ppi",
+    "file_path": "./../../../data/kiml_data/networks/gene_gene_regulates.txt",
+    "source": "source",
+    "target": "target",
+    "sep": " ",
+    "symbol": "hgnc",
+    "weight": "None",
+    "directed": false
+  },
+  {
+    "name": "biological_process",
+    "type": "ppi",
+    "file_path": "./../../../data/kiml_data/networks/network_biological_process.txt",
+    "source": "source",
+    "target": "target",
+    "sep": " ",
+    "symbol": "hgnc",
+    "weight": "None",
+    "directed": false
+  },
+  {
+    "name": "pathway",
+    "type": "ppi",
+    "file_path": "./../../../data/kiml_data/networks/network_pathway.txt",
+    "source": "source",
+    "target": "target",
+    "sep": " ",
+    "symbol": "hgnc",
+    "weight": "None",
+    "directed": false
+  },
+  {
+    "name": "reactome_paths",
+    "type": "ppi",
+    "file_path": "./../../../data/kiml_data/networks/reactome_pathways.txt",
+    "source": "source",
+    "target": "target",
+    "sep": " ",
+    "symbol": "hgnc",
+    "weight": "None",
+    "directed": false
+  }
+]

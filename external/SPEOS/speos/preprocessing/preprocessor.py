@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import json
 import extensions.preprocessing as hooks
+import os
 
 
 class PreProcessor:
@@ -15,18 +16,17 @@ class PreProcessor:
                  mapping_list: list,
                  adjacency_list: list,
                  translation_table: str = "data/hgnc_official_list.tsv",
-                 expression_files=["./data/GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_median_tpm.gct",
-                                   "./data/human_protein_atlas_rna_blood_cell.tsv"],
-                 name: str = "RBC",
+                 expression_files=["data/GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_median_tpm.gct",
+                                   "data/human_protein_atlas_rna_blood_cell.tsv"],
                  extension_inputs: str = "./extensions/datasets.json"):
 
-        self.name = name
+        self.name = config.name
         self.config = config
         self.mapping_list = mapping_list
-        self.translation_table_path = translation_table
+        self.translation_table_path = os.path.join(config.input.main_dir, translation_table)
         self.translation_table = None
         self.G = None
-        self.expression_files = expression_files
+        self.expression_files = [os.path.join(config.input.main_dir, expression_file) for expression_file in expression_files]
         self.num_random_features = 100
         self.features_list = []
         self.logger_args = [config, __name__]
@@ -39,17 +39,20 @@ class PreProcessor:
         self.ensembl2id = None
         self.entrez2id = None
         self.hgnc2id = None
+        print("___init____ assign new adjacencies...")
         self.assign_new_adjacencies(adjacency_list, compile=False)
         self.assign_new_ground_truth(mapping_list, compile=False)
-        self.read_extension_inputs(extension_inputs)
+        # self.read_extension_inputs(extension_inputs)
+        self.read_extension_inputs(config.input.datasets)
 
-    def build_graph(self, features=True, use_embeddings=None):
+    def build_graph(self, features=True, use_embeddings=None, adjacency=True):
         """Builds the graph given the adjacency matrices and input features specified during initialization.
 
             Args:
                 features (bool): If features should be added to nodes. This leads to longer compilation times, but it changes the number and indices of nodes, 
                     as nodes with missing features will be removed from the graph.
                 use_embeddings (bool): If node embeddings should be added to node features. If :obj:`None`, the respective setting will be read from the config provided during initialization.
+                adjacency (bool): If adjacencies should be loaded and the graph constructed or if only features and labels should be loaded.
            """
 
         self._read_translation_table()
@@ -65,7 +68,8 @@ class PreProcessor:
 
         self.G.add_nodes_from(node_list)
 
-        self._add_adjacencies()
+        if adjacency:
+            self._add_adjacencies()
 
         self.graph_is_built = True
 
@@ -77,7 +81,7 @@ class PreProcessor:
         logger = setup_logger(*self.logger_args)
         logger.info(nx.info(self.G))
 
-    def get_data(self):
+    def get_data(self, features=True):
         """ Returns the data in the same format produced by self.format_for_pygeo(), but compiles the data beforehand (i.e. builds the graph etc.) if that has not happened yet.
         
             Returns:
@@ -85,9 +89,9 @@ class PreProcessor:
         """
         if not self.graph_is_built:
             # if graph has not been set up first
-            self.build_graph()
+            self.build_graph(features)
 
-        if not self.has_features:
+        if features and not self.has_features:
             # if features arent loaded yet
             self._add_x_features()
 
@@ -104,8 +108,18 @@ class PreProcessor:
         return X, y, adj
 
     def get_node_list(self) -> list:
-        return [(i, {self.entrez_key: series[self.entrez_key], self.ensembl_key: series[self.ensembl_key], self.hgnc_key:series[self.hgnc_key], "y": 0, "x": []})
+
+        node_list = [(i, {self.entrez_key: series[self.entrez_key], self.ensembl_key: series[self.ensembl_key], self.hgnc_key:series[self.hgnc_key], "y": 0, "x": []})
                 for i, series in self.translation_table.iterrows()]
+        all_genes = np.loadtxt("./../../../../data/kiml_data/ahbd/adult_expression.txt", dtype=object)[:, 0]
+        all_genes = set(all_genes)
+        print(len(all_genes))
+        translation_genes = self.translation_table["hgnc"].tolist()
+        for gene in all_genes:
+            if gene not in translation_genes:
+                node_list.append((len(node_list), {self.entrez_key:None, self.ensembl_key:None, self.hgnc_key:gene, "y":0, "x":[]}))
+        return node_list
+
 
     def _read_translation_table(self, path=None, hgnc_col="symbol", entrez_col="entrez_id", ensembl_col="ensembl_gene_id", sep="\t") -> None:
 
@@ -158,26 +172,63 @@ class PreProcessor:
             adjacency_list = [adjacency_list]
         self.adjacency_list = adjacency_list
         logger = setup_logger(*self.logger_args)
+        print("----x---- self.adjacency_list---- : ",self.adjacency_list)
         logger.info("Using Adjacency matrices: " + str([adjacency["name"] for adjacency in self.adjacency_list]))
         self.adjacency_dict = {}
 
         if self.G is not None and wipe:
             self.G.remove_edges_from(list(self.G.edges()))
 
+        # self._add_adjacencies()
         if compile:
             self._add_adjacencies()
 
     def _add_adjacencies(self) -> None:
         for adjacency_mapping in self.adjacency_list:
+            print("------_add_adjacencies-------")
+            print(adjacency_mapping)
             self.adjacency_dict.update({adjacency_mapping["name"]: len(self.adjacency_dict.keys())})
 
             edge_list = self._handle_ppi(adjacency_mapping)
-
-            self.G.add_edges_from(edge_list)
+            
+            # USE THIS TO RUN WITH EDGE WEIGHTS
+            # print("-----ATTENTION!!! RUNNING WITH EDGE WEIGHTS-----")
+            # formatted_edge_list = [(u, v, k, {"weight": weight}) for u, v, k, weight in edge_list]
+            
+            
+            # USE THIS TO RUN WITHOUT EDGE WEIGHTS
+            print("-----ATTENTION!!! RUNNING WITHOUT EDGE WEIGHTS-----")
+            formatted_edge_list = [(u, v, k) for u, v, k, weight in edge_list]
+            
+            
+            self.G.add_edges_from(formatted_edge_list)
 
     def _handle_ppi(self, mapping: dict) -> list:
+        print("Handle ppi........................")
         edge_list = []
-        adjacency = pd.read_csv(mapping["file_path"], sep=mapping["sep"], header=0, usecols=[mapping["target"], mapping["source"]])
+        weighted = False
+
+        logger = setup_logger(*self.logger_args)
+        logger.debug("Reading Adjacency {} in {} mode.".format(mapping["name"], "directed" if mapping["directed"] else "undirected"))
+
+        # adjacency = pd.read_csv(os.path.join(self.config.input.main_dir, mapping["file_path"]),
+        #                                      sep=mapping["sep"], header=0, usecols=[mapping["source"], mapping["target"], "weight"])
+        
+        # Define the file path and mapping
+        file_path = os.path.join(self.config.input.main_dir, mapping["file_path"])
+
+        # Read the dataset with only the header to check for column presence
+        df_header = pd.read_csv(file_path, sep=mapping["sep"], header=0, nrows=1)
+
+        # Dynamically define the columns to use
+        usecols = [mapping["source"], mapping["target"]]  # Required columns
+        if "weight" in df_header.columns:
+            weighted = True
+            print("-----x----weight column--------")
+            usecols.append("weight")
+
+        # Load the dataset with the dynamically adjusted `usecols`
+        adjacency = pd.read_csv(file_path, sep=mapping["sep"], header=0, usecols=usecols)
 
         if mapping["symbol"] == "ensemble":
             mapping["symbol"] = "ensembl"
@@ -198,14 +249,20 @@ class PreProcessor:
 
         for _, series in adjacency.iterrows():
             try:
+                weight = 1
+                if weighted:
+                    weight = series["weight"]
+                    
                 edge_list.append(
-                    (idx_dict[series[mapping["source"]]], idx_dict[series[mapping["target"]]], self.adjacency_dict[mapping["name"]]))
+                    (idx_dict[series[mapping["source"]]], idx_dict[series[mapping["target"]]], self.adjacency_dict[mapping["name"]], weight))
+                # print(edge_list[-1])
                 if not mapping["directed"]:
                     # if the adjacency is undirected, also add the inverse edge
                     edge_list.append(
-                        (idx_dict[series[mapping["target"]]], idx_dict[series[mapping["source"]]], self.adjacency_dict[mapping["name"]]))
+                        (idx_dict[series[mapping["target"]]], idx_dict[series[mapping["source"]]], self.adjacency_dict[mapping["name"]], weight))
             except KeyError:
                 pass
+        print(edge_list[-1])
         return edge_list
     
     @classmethod
@@ -220,10 +277,11 @@ class PreProcessor:
             rows_to_swap = np.asarray(range(len(adjacency)))
             np.random.shuffle(rows_to_swap)
         else:
-            _, rows_to_swap = train_test_split(np.asarray(range(len(adjacency))), test_size=randomize_factor, )
+            _, rows_to_swap = train_test_split(np.asarray(range(len(adjacency))), test_size=randomize_factor)
         _adjacency = adjacency.copy(deep=True)
         if len(rows_to_swap) % 2 == 1:
             rows_to_swap = rows_to_swap[:-1]
+
         swapped_row_indices_mask = [i - 1 if i % 2 == 1 else i + 1 for i in range(len(rows_to_swap))]
         swapped_row_indices = rows_to_swap[swapped_row_indices_mask]
         adjacency_values = _adjacency.values
@@ -233,7 +291,7 @@ class PreProcessor:
 
     def translate_protein_to_gene(self, adjacency: pd.DataFrame):
 
-        table = pd.read_csv("data/protein_gene_table.tsv", header=0, sep="\t")
+        table = pd.read_csv(os.path.join(self.config.input.main_dir, "data/protein_gene_table.tsv"), header=0, sep="\t")
         protein_to_gene_dict = {row[0]: row[1] for _, row in table.iterrows()}
         adj_dict = adjacency.to_dict("list")
         new_adj_dict = {}
@@ -256,6 +314,9 @@ class PreProcessor:
     def _build_expression_table(self) -> None:
         self.expression_table = None
 
+        if not self.config.input.use_expression:
+            return
+
         for expression_file in self.expression_files:
 
             if "gtex" in expression_file.lower():
@@ -270,9 +331,7 @@ class PreProcessor:
                 if self.config.input.log_expression:
                     new_expression_table = np.log(new_expression_table + (new_expression_table[new_expression_table > 0].min() / 2))
 
-                self._join_expression_tables(new_expression_table)
-
-            if "human_protein_atlas" in expression_file.lower():
+            elif "human_protein_atlas" in expression_file.lower():
                 raw_table = pd.read_csv(
                     expression_file, sep="\t", header=0, index_col=0)
 
@@ -287,7 +346,10 @@ class PreProcessor:
                 if self.config.input.log_expression:
                     new_expression_table = np.log(new_expression_table + (new_expression_table[new_expression_table > 0].min() / 2))
 
-                self._join_expression_tables(new_expression_table)
+            else:
+                raise ValueError("The Expression File {} that was put in does not adhere to naming conventions.".format(expression_file))
+            
+            self._join_expression_tables(new_expression_table)
 
     def _join_expression_tables(self, new_table) -> None:
         if self.expression_table is None:
@@ -300,12 +362,14 @@ class PreProcessor:
         ''' this removes nodes that do not have all the features that we request.
             Thus, node indices before and after this method call can change and usually do.
         '''
-
-        feature_df_list = [pd.read_csv(mapping["features_file"], sep=" ", header=0)
+        feature_df_list = [pd.read_csv(os.path.join(self.config.input.main_dir, mapping["features_file"]),
+                                       sep=" ", header=0)
                            for mapping in self.mapping_list if mapping["features_file"] != ""]
+        print("_______self.mapping_list---------- : ", self.mapping_list)
+        print("______feature_df_list_______ : ", feature_df_list)
 
         if len(feature_df_list) > 0:
-
+            print("--------------A-----------------")
             columns = feature_df_list[0].columns.tolist()
             column_indices = [columns.index(feature) for feature in gwas_features]
 
@@ -313,29 +377,37 @@ class PreProcessor:
                 feature_df.index = feature_df["GENE"].tolist()
 
         if use_embeddings is None:
+            print("--------------B-----------------")
             use_embeddings = self.config.input.use_embeddings
 
         if use_embeddings:
+            print("--------------C-----------------")
             from gensim.models import KeyedVectors
-            wv = KeyedVectors.load(self.config.input.embedding_path, mmap='r')
+            wv = KeyedVectors.load(os.path.join(self.config.input.main_dir, self.config.input.embedding_path), mmap='r')
 
         if len(self.additional_inputs) > 0:
+            print("--------------D-----------------")
             addtl_dfs = [getattr(hooks, addtl_input["function"])(*addtl_input["args"], **addtl_input["kwargs"]) for addtl_input in self.additional_inputs]
             addtl_dfs_identifiers = [addtl_input["identifier"].lower() for addtl_input in self.additional_inputs]
-            
+            # print("-------addtl_dfs-------", addtl_dfs)
+            # print("-------addtl_dfs_identifiers-------", addtl_dfs_identifiers)
             for identifier in addtl_dfs_identifiers:
                 if identifier not in [self.hgnc_key, self.ensembl_key, self.entrez_key]:
                     raise ValueError("The identifier Key of additional inputs has to be one of {}".format([self.hgnc_key, self.ensembl_key, self.entrez_key]))
 
         if self.config.input.use_gwas or self.config.input.use_expression or use_embeddings or len(self.additional_inputs) > 0:
+            print("--------------E-----------------")
             random_run = False
         else:
             # if we neither use gwas, nor expression nor embedding features, use random features instead
+            print("--------------F-----------------")
             random_run = True
             random_features = np.random.rand(len(list(self.G.nodes)), self.num_random_features)
 
         if not dummy:
+            print("--------------G-----------------")
             for i, node in enumerate(list(self.G.nodes(data=True))):
+                # print("--------------H----------------- : ", node)
                 try:
                     if self.config.input.use_gwas:
                         for feature_df in feature_df_list:
@@ -356,7 +428,7 @@ class PreProcessor:
                         node[1]["x"].extend(random_features[i, :].tolist())
                     if len(self.additional_inputs) > 0:
                         for df, identifier in zip(addtl_dfs, addtl_dfs_identifiers):
-                            node[1]["x"].extend(df.loc[node[1][identifier]].tolist())
+                            node[1]["x"].extend(df.loc[node[1][identifier]].values.tolist())
 
                 except ValueError:
                     # if there is no entrez id (it is set to nan) of a node, remove it since we can't add features to it
@@ -364,28 +436,35 @@ class PreProcessor:
                 except KeyError:
                     # if there is no info about a node in the magma file, remove it
                     self.G.remove_node(node[0])
+                # print("--------------HH----------------- : ", node)
 
         if self.config.input.use_gwas:
+            print("--------------I-----------------")
             for gwas_name in self.gwas_names:
                 for gwas_feature in gwas_features:
+                    # print("--------------I----------------- : ", gwas_feature, gwas_name)
                     self.features_list.append(" ".join((gwas_feature, gwas_name)))
-
+        print("--a")
         if len(self.expression_files) > 0 and self.config.input.use_expression:
+            print("--------------J-----------------")
             self.features_list.extend(self.expression_table.columns)
-
+        print("--b")     
         if use_embeddings:
+            print("--------------K-----------------")
             self.features_list.extend(["EmbDim{}".format(i)
                                       for i in range(len(wv[wv.index_to_key[0]]))])
-
+        print("--c")
         if random_run:
+            print("--------------L-----------------")
             self.features_list.extend("Rand{}".format(i) for i in range(self.num_random_features))
-
+        print("--d")
         if not dummy:
+            print("--------------M-----------------")
             # reindex so indices don't skip numbers after deletion of nodes
             self._reindex()
-
+        print("--------------N-----------------")
         self.has_features = True
-
+        print("--e")
     def _add_y_label(self) -> None:
         if not self.graph_is_built:
             self.build_graph(features=False)
@@ -393,8 +472,8 @@ class PreProcessor:
         try:
             known_positives_set = getattr(hooks, self.mapping_list[0]["function"])(*self.mapping_list[0]["args"], **self.mapping_list[0]["kwargs"])
         except KeyError:
-            known_positives_df = pd.read_csv(self.mapping_list[0]["ground_truth"], sep="\t", names=[
-                                      "chromosome", "start", "end", "symbol", "strand"])
+            known_positives_df = pd.read_csv(os.path.join(self.config.input.main_dir, self.mapping_list[0]["ground_truth"]), 
+                                             sep="\t", names=["chromosome", "start", "end", "symbol", "strand"])
             known_positives_set = set(known_positives_df["symbol"].tolist())
 
         try:
@@ -467,6 +546,7 @@ class PreProcessor:
             self._add_y_label()
 
     def format_for_pygeo(self):
+        print("--------format for pygeo------------")
         all_edges = np.asarray(self.G.edges)
         adj = {}
         for name, i in self.adjacency_dict.items():
@@ -484,9 +564,11 @@ class PreProcessor:
         for node in self.G.nodes(data=True):
             X.append(node[1]["x"])
             y.append(node[1]["y"])
-
         X = np.array(X).astype(np.float64)
-        X = robust_scale(X, axis=0)
+        try:
+            X = robust_scale(X, axis=0)
+        except ValueError:
+            X = None
         y = np.array(y)
 
         return X, y, adj

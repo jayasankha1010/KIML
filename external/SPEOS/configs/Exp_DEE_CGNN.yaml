@@ -1,0 +1,31 @@
+  name: Exp_DEE_CGNN
+
+# Process loads already processed data from the above name Exp9_crossval_filmedge_2.pt
+  input:
+    adjacency: ["pathway", "dummy"]
+    adjacency_field: [name, "name"]
+    tag: dee_2022_09
+    use_expression: False
+    datasets: ./extensions/datasets_hl.json
+
+  model:
+    mp:
+       type: film
+       n_layers: 2
+    pre_mp:
+      dim: 50
+      n_layers: 5
+    post_mp:
+      dim: 50
+      n_layers: 5
+       
+  crossval:
+    mode: kfold
+    n_folds: 5
+    positive_only: True
+    seed: 1
+
+  inference:
+    save_dir: ./results/
+    save_sorted: True
+    save_tsv: True
