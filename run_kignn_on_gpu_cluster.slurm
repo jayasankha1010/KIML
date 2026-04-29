@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --account="punim0512"
 #SBATCH --job-name="kiml_speos"
-#SBATCH --partition=sapphire
-#SBATCH --gres=gpu:0
+#SBATCH --partition=gpu-a100
+#SBATCH --gres=gpu:1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
@@ -73,13 +73,36 @@ echo "----------------------------------------"
 python -u "$SCRIPT_PATH" -c "$CONFIG_PATH"
 
 EXIT_CODE=$?
+# 8. Execute Post-Processing (Only if main pipeline succeeds)
+echo "----------------------------------------"
+if [ $MAIN_EXIT_CODE -eq 0 ]; then
+    echo "[Success] Main SPEOS pipeline completed. Starting post-processing..."
+    
+    # Step 8a: Summarize Probabilities
+    echo "--> Summarizing output probabilities..."
+    python -u ./results_processing/summarize_output_probabilities.py -e "$EXP_NAME"
+    SUM_EXIT_CODE=$?
+    
+    # Step 8b: Evaluate Results (Only if summarization succeeds)
+    if [ $SUM_EXIT_CODE -eq 0 ]; then
+        echo "--> Evaluating results..."
+        python -u ./results_processing/evaluate_results.py -e "$EXP_NAME" -d "$DATASET" --comment "$EXP_NAME"
+        FINAL_EXIT_CODE=$?
+    else
+        echo "[Error] Probability summarization failed. Skipping evaluation."
+        FINAL_EXIT_CODE=$SUM_EXIT_CODE
+    fi
+else
+    echo "[Error] Main SPEOS pipeline failed. Skipping all post-processing."
+    FINAL_EXIT_CODE=$MAIN_EXIT_CODE
+fi
 
-# 8. Cleanup and Exit
+# 9. Cleanup and Exit
 cd ../..
 echo "----------------------------------------"
-if [ $EXIT_CODE -eq 0 ]; then
-    echo "[Success] SPEOS SLURM job completed execution."
+if [ $FINAL_EXIT_CODE -eq 0 ]; then
+    echo "[Success] Entire KIML SLURM job (Training + Evaluation) completed flawlessly."
 else
-    echo "[Error] SPEOS SLURM job encountered an error. Check the standard out/error logs."
-    exit $EXIT_CODE
+    echo "[Error] KIML SLURM job encountered an error along the pipeline."
+    exit $FINAL_EXIT_CODE
 fi

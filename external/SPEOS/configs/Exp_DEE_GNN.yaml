@@ -2,8 +2,8 @@
 
 # Process loads already processed data from the above name Exp9_crossval_filmedge_2.pt
   input:
-    adjacency: ["pathway", "dummy"]
-    adjacency_field: [name, "name"]
+    adjacency: ["BioPlex30293T","BioPlex30HCT116","HuRI"]
+    adjacency_field: [name, "name", "name"]
     tag: dee_2022_09
     use_expression: False
     datasets: ./extensions/datasets_ll.json

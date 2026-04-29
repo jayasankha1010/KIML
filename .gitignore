@@ -31,6 +31,8 @@ MANIFEST/
 data
 external/SPEOS/logs/
 external/SPEOS/models/
+external/SPEOS/runs/
+external/SPEOS/results/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

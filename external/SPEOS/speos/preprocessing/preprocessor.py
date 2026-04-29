@@ -79,7 +79,7 @@ class PreProcessor:
             self._add_x_features(use_embeddings=use_embeddings)
 
         logger = setup_logger(*self.logger_args)
-        logger.info(nx.info(self.G))
+        # logger.info(nx.info(self.G))
 
     def get_data(self, features=True):
         """ Returns the data in the same format produced by self.format_for_pygeo(), but compiles the data beforehand (i.e. builds the graph etc.) if that has not happened yet.
