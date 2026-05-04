@@ -82,3 +82,30 @@ EXP_NAME="Exp_DEE_KIGNN" # (or Exp_DEE_KIRF)
 DATASET="dee"
 ```
 The script will automatically update all internal configuration paths and downstream evaluation arguments dynamically based on these variables.
+
+
+## Optional: Custom PubMed Data Scraping & Temporal Filtering
+
+By default, the KIML repository provides pre-computed text embeddings. However, if you wish to generate your own gene-to-literature mappings or apply different temporal cutoffs (e.g., simulating knowledge states from 2022), you can use the utilities provided in the `KIML/kiml` directory.
+
+These scripts perform a four-step extraction and embedding pipeline:
+1. **API Scraping:** Queries the ToppGene API to find all PubMed IDs associated with your target HGNC genes.
+2. **JSON Parsing:** Extracts and cleans the relevant PubMed IDs into an associative mapping.
+3. **Temporal Filtering:** Cross-references mapped IDs against a master PubMed database (`pubmed_articles_v5.csv`) and aggressively filters out any papers published after your specified cutoff date to strictly prevent data leakage.
+4. **LLM Embedding:** Uses a HuggingFace Sentence Transformer (`all-MiniLM-L6-v2`) to convert the filtered medical abstracts into dense numerical feature vectors for the ML pipelines.
+
+**Execution Flow:**
+Ensure you have the master PubMed database in your `data/` directory. Then, run the pipeline sequentially from the root directory:
+
+```bash
+# 1. Fetch JSON data from ToppGene API (References SPEOS HGNC list)
+python kiml/toppgene_data_dump.py
+
+# 2. Extract PubMed IDs from the JSON responses
+python kiml/get_pubmed_paper_per_gene.py
+
+# 3. Filter papers by date (default: Oct 1, 2022) and map text to genes
+python kiml/get_pubmed_paper_content.py
+
+# 4. Generate Transformer Embeddings
+python kiml/generate_pubmed_embeddings.py
