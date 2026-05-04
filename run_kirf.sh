@@ -90,9 +90,21 @@ EXIT_CODE=$?
 # 7. Cleanup and Exit
 cd ../..
 echo "----------------------------------------"
+
+# --- AUTOMATED EVALUATION STEP (Runs unconditionally) ---
+echo "--> Attempting Evaluation Metrics..."
+python results/evaluate_mantis_single.py \
+  --name "$EXP_NAME" \
+  --folder "dee_2022_dee_2022_pubmed_only_1_iter_custom" \
+  --targets "DEE-2025_03_vs_2022_09.txt" \
+  --metrics_out "RF_results/rank_metrics.tsv"
+
+echo "----------------------------------------"
+
+# 8. Final Status Check
 if [ $EXIT_CODE -eq 0 ]; then
-    echo "[Success] Mantis pipeline completed successfully."
+    echo "[Success] Mantis pipeline and evaluation completed successfully."
 else
-    echo "[Error] Mantis pipeline encountered an error. Check the Nextflow logs."
+    echo "[Error] Mantis pipeline encountered an error upstream. Check the Nextflow logs."
     exit $EXIT_CODE
 fi
