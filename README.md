@@ -109,3 +109,16 @@ python kiml/get_pubmed_paper_content.py
 
 # 4. Generate Transformer Embeddings
 python kiml/generate_pubmed_embeddings.py
+
+## Optional: Knowledge Graph Network Extraction
+
+While the scripts above generate dense text features, the Graph Neural Network (KIGNN) relies on spatial topology to learn. If you wish to build your own network structures from raw Hetionet data, you can use the edge extractor utility.
+
+This script parses the raw `hetionet-v1.0.json` file, isolates target nodes, and extracts all direct binary relationships (e.g., interacts, regulates) into independent edge-list text files.
+
+**Execution Flow:**
+Ensure the raw `hetionet-v1.0.json` file is present in your `data/` directory, then run:
+Download the file from orginal source here, https://github.com/hetio/hetionet/tree/main/hetnet/json
+
+```bash
+python kiml/knowledge_graph_edge_extractor.py
