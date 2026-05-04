@@ -1,14 +1,16 @@
 # Knowledge Inclusive Machine Learning (KIML)
 
-Welcome to the Knowledge Inclusive Machine Learning (KIML) repository. This project implements a comprehensive pipeline for graph-based machine learning, specifically utilizing Knowledge Inclusive Graph Neural Networks (KIGNN) for advanced cross-validation and post-processing evaluation.
+Welcome to the Knowledge Inclusive Machine Learning (KIML) repository. This project implements a comprehensive pipeline for machine learning in genomics and healthcare, featuring two distinct architectural approaches:
+1. **KIGNN:** Knowledge Inclusive Graph Neural Networks (built on SPEOS).
+2. **KIRF:** Knowledge Inclusive Random Forests / XGBoost (built on Mantis).
 
 ## Acknowledgements
 
 This repository builds upon, integrates, and modifies code from the following outstanding external frameworks:
-* **SPEOS**
-* **Mantis**
+* **SPEOS** (for the KIGNN pipeline)
+* **Mantis** (for the KIRF pipeline)
 
-*Note for Users:* Because KIML introduces novel datasets and makes internal architectural alterations to the SPEOS and Mantis codebases, we have created a "hard fork" of these repositories. **You do not need to follow the original environment setup guides for SPEOS or Mantis.** This repository provides a unified, self-bootstrapping environment that resolves all dependencies automatically.
+*Note for Users:* Because KIML introduces novel datasets and makes internal architectural alterations to the SPEOS and Mantis codebases, we have created a "hard fork" of these repositories. **You do not need to follow the original environment setup guides for SPEOS or Mantis.** This repository provides unified, self-bootstrapping execution scripts that resolve all legacy dependencies (including Nextflow and older TensorFlow versions) automatically.
 
 ## Prerequisites
 
@@ -29,31 +31,54 @@ The KIML pipeline requires specific datasets (e.g., `mantis_Input_Files` and `pu
 2. Run the data setup script:
    ```bash
    python setup_data.py
+   ```
+*(Note: This script will automatically install the lightweight `gdown` library to your current active environment to safely bypass Google Drive's large-file virus scan warnings, and it will clean up any hidden macOS metadata folders during extraction).*
 
-## Step 2: Running the Pipeline
-Once the data is securely downloaded and extracted, you can execute the entire machine learning pipeline using our fully automated, self-bootstrapping script (run_kiml.sh).
+---
 
-Execution Instructions
-Make the execution script executable:
+## Step 2: Running the Pipelines
 
-Bash
-chmod +x run_kiml.sh
-Run the pipeline:
+We provide fully automated, self-bootstrapping scripts for both architectures. On their first run, these scripts will natively build their respective Conda environments (`speos_kiml` or `mantis_kiml`), patch legacy dependencies, execute the models, and run post-processing evaluation.
 
-Bash
-./run_kiml.sh
-What the script does automatically:
-Environment Setup: On the very first run, it reads the strictly versioned requirements.yaml file and natively builds the speos_kiml Conda environment. This may take 10-15 minutes initially but will be instantly cached for all future runs.
+### Option A: Graph Neural Network (KIGNN)
+The KIGNN pipeline uses PyTorch Geometric for spatial graph-based learning.
 
-Cross-Validation: It navigates into the internal SPEOS directory and triggers outer_crossval.py using the specified YAML configuration.
+**To run locally (Standard Linux Server):**
+```bash
+chmod +x run_kignn.sh
+./run_kignn.sh
+```
 
-Evaluation: Upon successful training, it safely chains the post-processing scripts, sequentially running summarize_output_probabilities.py and evaluate_results.py to generate your final metrics.
+**To run on an HPC Cluster (SLURM):**
+```bash
+sbatch run_kignn_on_gpu_cluster.slurm
+```
+*Outputs for this pipeline are automatically routed to the `GNN_results/` directory.*
 
-Modifying the Experiment
-By default, the script runs the Exp_DEE_KIGNN experiment on the dee dataset. If you wish to run a different experiment or test a different dataset, open run_kiml.sh in your preferred text editor and simply modify the variables at the top of the file:
+### Option B: Random Forest (KIRF)
+The KIRF pipeline uses Nextflow to orchestrate XGBoost/Random Forest models for semi-supervised learning.
 
-Bash
-## --- Experiment Variables ---
-EXP_NAME="Exp_DEE_KIGNN"
+**To run locally (Standard Linux Server):**
+```bash
+chmod +x run_kirf.sh
+./run_kirf.sh
+```
+
+**To run on an HPC Cluster (SLURM):**
+```bash
+sbatch run_kirf_on_gpu_cluster.slurm
+```
+*Outputs for this pipeline are automatically routed to the `RF_results/` directory.*
+
+---
+
+## Modifying the Experiment
+
+By default, the scripts are configured to run the `dee` dataset experiment. If you wish to run a different experiment or test a different dataset, open the respective execution script (`.sh` or `.slurm`) in your preferred text editor and modify the experiment variables near the top of the file:
+
+```bash
+# --- Experiment Variables ---
+EXP_NAME="Exp_DEE_KIGNN" # (or Exp_DEE_KIRF)
 DATASET="dee"
-The script will automatically update all configuration paths and downstream evaluation arguments dynamically based on these two variables.
+```
+The script will automatically update all internal configuration paths and downstream evaluation arguments dynamically based on these variables.
