@@ -141,23 +141,23 @@ def calculate_ranks(experiment=default_experiment, compare_from=compare_from_def
     # ---- Select gene list based on disease
     # (Mapping abbreviated for brevity, same as before)
     disease_map = {
-        "dee": "./../../data/kiml_data/diseases/2022_09_to_2025_03.txt",
-        "ad_dee": "./../../data/kiml_data/diseases/ad_dee_2022_09_to_2025_03.txt",
-        "ar_dee": "./../../data/kiml_data/diseases/ar_dee_2022_09_to_2025_03.txt",
+        "dee": "./../../data/kiml_data/diseases/DEE-2025_03_vs_2022_09.txt",
+        "ad_dee": "./../../data/kiml_data/diseases/AD_DEE-2022_09_to_2025_03.txt",
+        "ar_dee": "./../../data/kiml_data/diseases/AR_DEE-2022_09_to_2025_03.txt",
         "aminoacidopathy": "./../../data/kiml_data/diseases/Aminoacidopathy-2025_06_vs_2022_09.txt",
         "arthrogryposis": "./../../data/kiml_data/diseases/Arthrogryposis-2025_06_vs_2022_09.txt",
         "ataxia": "./../../data/kiml_data/diseases/Ataxia_paed-2025_06_vs_2022_09.txt",
         "cp": "./../../data/kiml_data/diseases/CP-2025_06_vs_2022_09.txt",
         "intellectual_disability": "./../../data/kiml_data/diseases/Intellectual-disability-2025_06_vs_2022_09.txt",
         "microcephaly": "./../../data/kiml_data/diseases/Microcephaly-2025_06_vs_2022_09.txt",
-        "mnd": "./../../data/kiml_data/diseases/MND-2025_06_vs_2022_09.txt", # Check path if MND is different
+        "mnd": "./../../data/kiml_data/diseases/MND-2025_06_vs_2022_09.txt", 
         "skeletal_dysplasia": "./../../data/kiml_data/diseases/Skeletal-dysplasia-diff-2025_06_vs_2022_09.txt",
         "platelet_disorder": "./../../data/kiml_data/diseases/Bleeding_and_Platelet_Disorders-2026-02_vs_2022-09.txt",
         "bone_marrow_failure": "./../../data/kiml_data/diseases/Bone_Marrow_Failure-2026-02_vs_2022-09.txt",
         "cataract": "./../../data/kiml_data/diseases/Cataract-2026-02_vs_2022-09.txt"
     }
 
-    base_path = "/data/projects/punim0512/chathura_projects/Speos_latest/data/"
+    base_path = "./"
     
     if disease.lower() not in disease_map:
         raise ValueError(f"Unknown disease: {disease}. Available: {list(disease_map.keys())}")

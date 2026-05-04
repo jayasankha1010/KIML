@@ -6,8 +6,8 @@ import sys
 
 # --- CONFIGURATION ---
 # Your specific Google Drive File ID
-GDRIVE_FILE_ID = "1fjnxffteL7B-vphWviYhZYENyt-HvFhk"
-
+GDRIVE_FILE_ID = "1x0FJmEcQtftWQ_h-1m2Ie-1aCYrkvET7"
+# https://drive.google.com/file/d/1x0FJmEcQtftWQ_h-1m2Ie-1aCYrkvET7/view?usp=sharing
 # Define paths
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"

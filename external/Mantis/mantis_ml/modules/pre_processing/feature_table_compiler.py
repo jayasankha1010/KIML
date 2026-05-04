@@ -1,12 +1,13 @@
 import sys
 import re
 import pandas as pd
+import shutil
+from pathlib import Path
+import os, tempfile
 from mantis_ml.modules.pre_processing.data_compilation import (process_generic_features,
                                                                process_features_filtered_by_disease,
                                                                process_ckd_specific_features,
                                                                process_cardiov_specific_features)
-
-from mantis_ml.config_class import Config
 
 
 
@@ -248,31 +249,149 @@ class FeatureTableCompiler:
         else:
             print("All missing data have been successfully imputed.")
 
-
+    
     def run(self):
-        # compile feature tables per class (generic/filtered-by-disease/disease-specific)
-        self.compile_feature_tables_per_class()
+        """
+        Unified pipeline:
+        - Always build the core feature tables first (to ensure known_gene + Gene_Name exist)
+        - Then decide whether to use:
+            * only core features     (feature_mode='core_only')
+            * only external features (feature_mode='external_only')
+            * both                   (feature_mode='combined')
+        """
+        
 
-        # merge all tables
+        # ---------------- CONFIG ----------------
+        feature_mode = "combined"   # options: core_only | external_only | combined
+        ext_mode     = "pubmed"        # options: toppgene | pubmed | both
+
+        # toppgene_path = Path("/data/projects/punim2453/Mantis-ml-NDD/mantis_ml/data/toppgene/toppgene_top50_chi2.tsv")
+        # toppgene_path = Path("/data/projects/punim2453/Mantis-ml-NDD/mantis_ml/data/toppgene/toppgene_boruta_rearranged_for_dee.tsv")
+        # toppgene_path = Path("/data/projects/punim2453/Mantis-ml-NDD/mantis_ml/data/toppgene/toppgene_boruta_rearranged_for_ad_dee.tsv")
+        # toppgene_path = Path("/data/projects/punim2453/Mantis-ml-NDD/mantis_ml/data/toppgene/toppgene_boruta_rearranged_for_ar_dee.tsv")
+
+
+        pubmed_path   = Path("./../../data/kiml_data/pubmed_embeddings/pubmed_features_2022.tsv")
+
+        gene_col   = "Gene_Name"
+        target_col = self.cfg.Y
+        core_cols  = ["known_gene", "Gene_Name"]
+
+        # ---------------- Step 1: ALWAYS run core pipeline ----------------
+        print(f"[stage] Building core feature tables (always run)...")
+        self.compile_feature_tables_per_class()
         self.combine_all_feature_tables()
 
-        # check for missing data
         missing_data = self.inspect_missing_data(self.full_features_df, verbose=True)
         if self.cfg.drop_missing_data_features:
-            df = self.drop_features_w_missing_data(self.full_features_df, missing_data, missing_data_thres=self.cfg.missing_data_thres)
+            self.full_features_df = self.drop_features_w_missing_data(
+                self.full_features_df,
+                missing_data,
+                missing_data_thres=self.cfg.missing_data_thres
+            )
 
-        # impute missing data
         self.impute_missing_data()
         self.verify_no_missing_data(self.full_features_df)
 
-        # move 'known_gene' column to end
-        tmp_known_gene = self.full_features_df[self.cfg.Y]
-        self.full_features_df.drop(self.cfg.Y, axis=1, inplace=True)
-        self.full_features_df[self.cfg.Y] = tmp_known_gene
-        print(self.full_features_df.shape)
+        # Ensure 'known_gene' at end
+        if target_col in self.full_features_df.columns:
+            y = self.full_features_df.pop(target_col)
+            self.full_features_df[target_col] = y
 
-        self.full_features_df.to_csv(self.cfg.complete_feature_table, sep='\t', index=None)
-        print("Saved full feature table (after imputation) to {0}".format(self.cfg.complete_feature_table))
+        # Save this always (ensures core table exists)
+        core_path = Path(self.cfg.complete_feature_table)
+        core_path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile("w", dir=str(core_path.parent), delete=False) as tmpf:
+            tmp = Path(tmpf.name)
+        self.full_features_df.to_csv(tmp, sep="\t", index=False)
+        os.replace(tmp, core_path)
+        print(f"[info] Core feature table saved at {core_path}")
+
+        # Extract just the known_gene + Gene_Name columns from the core set
+        core_df = self.full_features_df[core_cols].copy()
+
+        # ---------------- Step 2: Build external features ----------------
+        def load_external(ext_path, label):
+            if not ext_path.exists():
+                raise FileNotFoundError(f"[error] {label} file not found: {ext_path}")
+
+            print(f"[info] Loading {label} features from {ext_path}")
+            ext_df = pd.read_csv(ext_path, sep="\t")
+
+            if gene_col not in ext_df.columns:
+                ext_df = ext_df.rename(columns={ext_df.columns[0]: gene_col})
+            ext_df = ext_df.drop_duplicates(subset=[gene_col])
+            return ext_df
+
+        def augment_with_external(base_df, ext_df, label):
+            print(f"[info] Merging {label} ({ext_df.shape[1]} columns).")
+            if "known_gene" in ext_df.columns:
+                ext_df = ext_df.drop(columns=["known_gene"])
+            merged = base_df.merge(ext_df, on=gene_col, how="left", validate="many_to_one")
+            print(f"[done] Added {ext_df.shape[1] - 1} new columns from {label}.")
+            return merged
+
+        # ---------------- Step 3: Decide which feature sets to keep ----------------
+        if feature_mode == "core_only":
+            print("[mode] Using core features only.")
+            final_df = self.full_features_df.copy()
+
+        elif feature_mode == "external_only":
+            print("[mode] Using external features only (but keeping known_gene + Gene_Name from core).")
+            base_df = core_df.copy()
+            if ext_mode == "toppgene":
+                ext_df = load_external(toppgene_path, "toppgene")
+                final_df = augment_with_external(base_df, ext_df, "toppgene")
+            elif ext_mode == "pubmed":
+                ext_df = load_external(pubmed_path, "pubmed")
+                final_df = augment_with_external(base_df, ext_df, "pubmed")
+            elif ext_mode == "both":
+                ext_df1 = load_external(toppgene_path, "toppgene")
+                merged1 = augment_with_external(core_df, ext_df1, "toppgene")
+                ext_df2 = load_external(pubmed_path, "pubmed")
+                final_df = augment_with_external(merged1, ext_df2, "pubmed")
+            else:
+                print(f"[warn] Unknown ext_mode '{ext_mode}', using only core columns.")
+                final_df = core_df.copy()
+
+        elif feature_mode == "combined":
+            print("[mode] Combining core and external features.")
+            base_df = self.full_features_df.copy()
+            if ext_mode == "toppgene":
+                ext_df = load_external(toppgene_path, "toppgene")
+                final_df = augment_with_external(base_df, ext_df, "toppgene")
+            elif ext_mode == "pubmed":
+                ext_df = load_external(pubmed_path, "pubmed")
+                final_df = augment_with_external(base_df, ext_df, "pubmed")
+            elif ext_mode == "both":
+                ext_df1 = load_external(toppgene_path, "toppgene")
+                merged1 = augment_with_external(base_df, ext_df1, "toppgene")
+                ext_df2 = load_external(pubmed_path, "pubmed")
+                final_df = augment_with_external(merged1, ext_df2, "pubmed")
+            else:
+                final_df = base_df.copy()
+        else:
+            raise ValueError(f"Unknown feature_mode: {feature_mode}")
+
+        # ---------------- Step 4: Save final feature table ----------------
+        dup_cols = [c for c in final_df.columns if c.startswith("known_gene.")]
+        if dup_cols:
+            print(f"[cleanup] Removing duplicate known_gene columns: {dup_cols}")
+            final_df = final_df.drop(columns=dup_cols)
+
+        cols = [c for c in core_cols if c in final_df.columns] + \
+            [c for c in final_df.columns if c not in core_cols]
+        final_df = final_df[cols]
+
+        out_path = Path(self.cfg.complete_feature_table)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile("w", dir=str(out_path.parent), delete=False) as tmpf:
+            tmp = Path(tmpf.name)
+        final_df.to_csv(tmp, sep="\t", index=False)
+        os.replace(tmp, out_path)
+
+        print(f"[✓] Saved feature table (feature_mode='{feature_mode}', ext_mode='{ext_mode}') to {out_path}")
+
 
 
 if __name__ == '__main__':

@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --account="punim0512"
 #SBATCH --job-name="kiml_speos"
-#SBATCH --partition=gpu-a100
-#SBATCH --gres=gpu:1
+#SBATCH --partition=sapphire
+#SBATCH --gres=gpu:0
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
@@ -29,6 +29,10 @@ mkdir -p $PIP_CACHE_DIR
 # 3. Initialize Conda for the bash session
 export CONDA_ENVS_PATH=/data/gpfs/projects/punim0512/anaconda3/envs
 eval "$(conda shell.bash hook)"
+
+# --- Experiment Variables ---
+EXP_NAME="Exp_DEE_KIGNN"
+DATASET="dee"
 
 # --- Configuration (Relative to KIML root) ---
 ENV_NAME="speos_kiml"
@@ -63,46 +67,54 @@ cd external/SPEOS || exit
 
 # --- Configuration (Now relative to external/SPEOS/) ---
 SCRIPT_PATH="outer_crossval.py"
-CONFIG_PATH="configs/Exp_DEE_KIGNN.yaml"
+CONFIG_PATH="configs/${EXP_NAME}.yaml"
 
 # 7. Execute the Code
-echo "--> Executing SPEOS cross-validation..."
-echo "Running: python -u $SCRIPT_PATH -c $CONFIG_PATH"
-echo "----------------------------------------"
+# echo "--> Executing SPEOS cross-validation..."
+# echo "Running: python -u $SCRIPT_PATH -c $CONFIG_PATH"
+# echo "----------------------------------------"
 
-python -u "$SCRIPT_PATH" -c "$CONFIG_PATH"
+# python -u "$SCRIPT_PATH" -c "$CONFIG_PATH"
+# MAIN_EXIT_CODE=$?
 
-EXIT_CODE=$?
-# 8. Execute Post-Processing (Only if main pipeline succeeds)
-echo "----------------------------------------"
-if [ $MAIN_EXIT_CODE -eq 0 ]; then
-    echo "[Success] Main SPEOS pipeline completed. Starting post-processing..."
-    
-    # Step 8a: Summarize Probabilities
-    echo "--> Summarizing output probabilities..."
-    python -u ./results_processing/summarize_output_probabilities.py -e "$EXP_NAME"
-    SUM_EXIT_CODE=$?
-    
-    # Step 8b: Evaluate Results (Only if summarization succeeds)
-    if [ $SUM_EXIT_CODE -eq 0 ]; then
-        echo "--> Evaluating results..."
-        python -u ./results_processing/evaluate_results.py -e "$EXP_NAME" -d "$DATASET" --comment "$EXP_NAME"
-        FINAL_EXIT_CODE=$?
-    else
-        echo "[Error] Probability summarization failed. Skipping evaluation."
-        FINAL_EXIT_CODE=$SUM_EXIT_CODE
-    fi
+if [ $MAIN_EXIT_CODE -ne 0 ]; then
+    echo "[Warning] Main SPEOS pipeline encountered an error. Proceeding to post-processing anyway..."
 else
-    echo "[Error] Main SPEOS pipeline failed. Skipping all post-processing."
-    FINAL_EXIT_CODE=$MAIN_EXIT_CODE
+    echo "[Success] Main SPEOS pipeline completed successfully."
+fi
+
+# 8. Execute Post-Processing (Forced Execution)
+echo "----------------------------------------"
+echo "--> Starting post-processing..."
+
+# Step 8a: Summarize Probabilities
+echo "--> Summarizing output probabilities..."
+python -u ./results_processing/summarize_output_probabilities.py -e "$EXP_NAME"
+SUM_EXIT_CODE=$?
+
+if [ $SUM_EXIT_CODE -ne 0 ]; then
+    echo "[Warning] Probability summarization encountered an error. Proceeding to evaluation anyway..."
+fi
+
+# Step 8b: Evaluate Results
+echo "--> Evaluating results..."
+python -u ./results_processing/evaluate_results.py -e "$EXP_NAME" -d "$DATASET" --comment "$EXP_NAME"
+EVAL_EXIT_CODE=$?
+
+if [ $EVAL_EXIT_CODE -ne 0 ]; then
+    echo "[Warning] Results evaluation encountered an error."
 fi
 
 # 9. Cleanup and Exit
 cd ../..
 echo "----------------------------------------"
-if [ $FINAL_EXIT_CODE -eq 0 ]; then
+
+# Determine final exit status based on all steps
+if [ $MAIN_EXIT_CODE -eq 0 ] && [ $SUM_EXIT_CODE -eq 0 ] && [ $EVAL_EXIT_CODE -eq 0 ]; then
     echo "[Success] Entire KIML SLURM job (Training + Evaluation) completed flawlessly."
+    exit 0
 else
-    echo "[Error] KIML SLURM job encountered an error along the pipeline."
-    exit $FINAL_EXIT_CODE
+    echo "[Finished] KIML SLURM job finished, but one or more steps encountered errors. Check the logs above."
+    # Return a generic error code so the system knows something went wrong
+    exit 1
 fi
