@@ -136,6 +136,55 @@ def bootstrap(hit_ranks, universe_size, n_boot, seed, alpha=0.05):
     return point, bounds
 
 
+def paired_bootstrap(ranks_a, ranks_b, universe_a, universe_b,
+                     n_boot, seed, alpha=0.05):
+    """Bootstrap the DIFFERENCE between two models on the same target genes.
+
+    Comparing two marginal confidence intervals is the wrong test and is badly
+    under-powered: both models are scored on the same post-split gene set, so
+    "these targets are hard for everyone" inflates both intervals and hides real
+    differences. Resampling genes once per draw and taking the difference
+    cancels that shared difficulty, which is the comparison the reviewer's
+    question actually implies.
+
+    Returns metric -> (difference, lo, hi, significant), where the difference is
+    A minus B. For rank metrics, negative means A ranks targets higher.
+    """
+    shared = sorted(set(ranks_a) & set(ranks_b))
+    if not shared:
+        return {}, 0
+
+    rng = random.Random(seed)
+    n = len(shared)
+    observed = {}
+    point_a = metrics_from_ranks([ranks_a[g] for g in shared], n, universe_a)
+    point_b = metrics_from_ranks([ranks_b[g] for g in shared], n, universe_b)
+    for key in point_a:
+        if not (math.isnan(point_a[key]) or math.isnan(point_b[key])):
+            observed[key] = point_a[key] - point_b[key]
+
+    draws = {key: [] for key in observed}
+    for _ in range(n_boot):
+        sample = [shared[rng.randrange(n)] for _ in range(n)]
+        draw_a = metrics_from_ranks([ranks_a[g] for g in sample], n, universe_a)
+        draw_b = metrics_from_ranks([ranks_b[g] for g in sample], n, universe_b)
+        for key in draws:
+            if not (math.isnan(draw_a[key]) or math.isnan(draw_b[key])):
+                draws[key].append(draw_a[key] - draw_b[key])
+
+    lo_i = int(alpha / 2 * n_boot)
+    hi_i = min(int((1 - alpha / 2) * n_boot), n_boot - 1)
+    out = {}
+    for key, values in draws.items():
+        if not values:
+            continue
+        values.sort()
+        lo = values[min(lo_i, len(values) - 1)]
+        hi = values[min(hi_i, len(values) - 1)]
+        out[key] = (observed[key], lo, hi, lo > 0 or hi < 0)
+    return out, n
+
+
 def logit(p, eps=1e-9):
     p = min(max(p, eps), 1 - eps)
     return math.log(p / (1 - p))
@@ -162,9 +211,17 @@ def late_fusion(rows_a, rows_b):
 
 def score_one(rows, targets, n_boot, seed):
     ranks, universe = rank_unseen(rows)
-    hit_ranks = [ranks[g] for g in targets if g in ranks]
-    point, bounds = bootstrap(hit_ranks, universe, n_boot, seed)
-    return point, bounds, len(hit_ranks), universe
+    target_ranks = {g: ranks[g] for g in targets if g in ranks}
+    point, bounds = bootstrap(list(target_ranks.values()), universe, n_boot, seed)
+    return point, bounds, target_ranks, universe
+
+
+# Contrasts worth testing, as (A, B). Each asks "is A better than B?"
+CONTRASTS = [
+    ("KI-GNN", "GNN"),        # the manuscript's central claim
+    ("KI-GNN", "C-GNN"),      # does experimental data add to knowledge alone?
+    ("Late-fusion", "KI-GNN"),  # R1.5d: late fusion vs concatenation
+]
 
 
 def main():
@@ -189,7 +246,7 @@ def main():
     for entry in lookup:
         by_disease.setdefault(entry["disease"], {})[entry["paper_variant"]] = entry["experiment_id"]
 
-    results = []
+    results, contrasts = [], []
     print("{:24}{:12}{:>8}{:>10}  {}".format("disease", "method", "targets",
                                              "median", "95% CI"))
     print("-" * 74)
@@ -227,9 +284,12 @@ def main():
                       "C-GNN has {} - denominators differ".format(
                           disease, shared, n_a, n_b))
 
+        scored = {}
         for method, rows in to_score.items():
-            point, bounds, n_targets, universe = score_one(
+            point, bounds, target_ranks, universe = score_one(
                 rows, targets, args.n_boot, args.seed)
+            scored[method] = (target_ranks, universe)
+            n_targets = len(target_ranks)
             record = {"disease": disease, "method": method,
                       "experiment": variants.get(method, "derived"),
                       "n_targets": n_targets, "universe_size": universe,
@@ -248,9 +308,59 @@ def main():
                 "-" if math.isnan(median) else "{:g}".format(median),
                 "[{:g}, {:g}]".format(*ci) if ci else "-"))
 
+        # Paired contrasts on the same genes, which is the properly powered
+        # version of "does A beat B on this disease?".
+        for a, b in CONTRASTS:
+            if a not in scored or b not in scored:
+                continue
+            ranks_a, universe_a = scored[a]
+            ranks_b, universe_b = scored[b]
+            diffs, n_paired = paired_bootstrap(
+                ranks_a, ranks_b, universe_a, universe_b, args.n_boot, args.seed)
+            if not diffs:
+                continue
+            record = {"disease": disease, "contrast": "{} - {}".format(a, b),
+                      "n_paired_targets": n_paired, "n_boot": args.n_boot}
+            for key, (difference, lo, hi, significant) in diffs.items():
+                record[key] = round(difference, 4)
+                record[key + "_lo"] = round(lo, 4)
+                record[key + "_hi"] = round(hi, 4)
+                record[key + "_sig"] = "yes" if significant else "no"
+            contrasts.append(record)
+
     if not results:
         print("\nNothing scored. Is --predictions pointing at the collected files?")
         return
+
+    if contrasts:
+        print("\n" + "=" * 86)
+        print(" PAIRED CONTRASTS - difference in median rank on the same genes")
+        print(" negative favours the first model; significant = 95% CI excludes zero")
+        print("=" * 86)
+        print("{:24}{:22}{:>7}{:>11}  {:24}{}".format(
+            "disease", "contrast", "n", "difference", "95% CI", "significant"))
+        for record in contrasts:
+            key = "median_rank_unseen"
+            if key not in record:
+                continue
+            print("{:24}{:22}{:>7}{:>11}  {:24}{}".format(
+                record["disease"], record["contrast"], record["n_paired_targets"],
+                "{:g}".format(record[key]),
+                "[{:g}, {:g}]".format(record[key + "_lo"], record[key + "_hi"]),
+                record[key + "_sig"]))
+        print("=" * 86)
+
+        columns = []
+        for record in contrasts:
+            for key in record:
+                if key not in columns:
+                    columns.append(key)
+        contrast_path = args.out.replace(".tsv", "_contrasts.tsv")
+        with open(contrast_path, "w", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=columns, delimiter="\t")
+            writer.writeheader()
+            writer.writerows(contrasts)
+        print("Wrote {} contrasts -> {}".format(len(contrasts), contrast_path))
 
     columns = list(results[0])
     for record in results:
