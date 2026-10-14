@@ -1,0 +1,268 @@
+"""
+Bootstrap confidence intervals and late fusion, over the manuscript's own predictions.
+
+Two reviewer comments, one pass over the collected per-gene prediction files:
+
+  R1.10  "Median rank is not enough to characterize a DGP method. Recall@K,
+          Precision@K, confidence intervals are highly relevant and should be
+          included in main results and not in supplementary only."
+
+          Every metric is reported with a percentile bootstrap CI obtained by
+          resampling the post-split target genes. This holds the model fixed and
+          asks: how much of the reported value is an accident of which genes
+          happened to be curated after the cutoff? That is the relevant
+          uncertainty for a retrieval metric, and it needs no retraining.
+
+  R1.5d / R4.1  "the current concatenation strategy versus learned or late
+          fusion" and "this is precisely what Bayesian inference is about - a
+          prior distribution integrated with a likelihood".
+
+          Late fusion sums the log-odds of the knowledge-only model (C-GNN) and
+          the experimental-only model (GNN). Under conditional independence that
+          is exactly prior x likelihood, so one experiment answers both: it tests
+          an alternative fusion strategy AND instantiates the Bayesian reading
+          Reviewer 4 asked for. No retraining - it recombines predictions the
+          manuscript already reports.
+
+Metric definitions are copied from results_processing/evaluate_results.py so the
+point estimates reproduce the published numbers exactly.
+
+Usage:
+    python additional_experiments/revision_runs/revision_analysis.py \
+        --predictions additional_experiments/revision_runs/paper_predictions
+"""
+
+import argparse
+import csv
+import math
+import os
+import random
+
+K_THRESHOLDS = [10, 25, 50, 100, 200, 250, 500, 1000]
+PERCENTAGES = [1, 5, 10]
+
+DISEASE_TARGETS = {
+    "dee": "DEE-2025_03_vs_2022_09.txt",
+    "ad_dee": "AD_DEE-2022_09_to_2025_03.txt",
+    "ar_dee": "AR_DEE-2022_09_to_2025_03.txt",
+    "microcephaly": "Microcephaly-2025_06_vs_2022_09.txt",
+    "intellectual_disability": "Intellectual-disability-2025_06_vs_2022_09.txt",
+    "mnd": "MND-2025_06_vs_2022_09.txt",
+    "cp": "CP-2025_06_vs_2022_09.txt",
+    "platelet_disorder": "Bleeding_and_Platelet_Disorders-2026-02_vs_2022-09.txt",
+    "arthrogryposis": "Arthrogryposis-2025_06_vs_2022_09.txt",
+}
+
+
+def load_predictions(path):
+    """-> list of (gene, truth, probability), plus a gene -> probability map."""
+    rows = []
+    with open(path, newline="") as handle:
+        for row in csv.DictReader(handle, delimiter="\t"):
+            try:
+                probability = float(row["avg_probability"])
+                truth = float(row["truth"])
+            except (TypeError, ValueError, KeyError):
+                continue
+            rows.append((row["hgnc"], truth, probability))
+    return rows
+
+
+def rank_unseen(rows):
+    """Rank genes not already positive, highest probability first.
+
+    Mirrors evaluate_results.py: drop truth == 1, then rank by avg_probability
+    descending with ties broken by order of appearance.
+    """
+    unseen = [(g, p) for g, t, p in rows if t != 1]
+    unseen.sort(key=lambda item: -item[1])
+    return {gene: i + 1 for i, (gene, _) in enumerate(unseen)}, len(unseen)
+
+
+def metrics_from_ranks(hit_ranks, n_targets, universe_size):
+    """Retrieval metrics for a set of target ranks. Same formulas as the paper."""
+    out = {}
+    if not hit_ranks or not n_targets:
+        out["median_rank_unseen"] = float("nan")
+        out["mean_rank_unseen"] = float("nan")
+        for pct in PERCENTAGES:
+            out["fold_enrichment_top_{}_pct".format(pct)] = 0.0
+        for k in K_THRESHOLDS:
+            out["recall_at_{}".format(k)] = 0.0
+            out["precision_at_{}".format(k)] = 0.0
+        return out
+
+    ordered = sorted(hit_ranks)
+    middle = len(ordered) // 2
+    out["median_rank_unseen"] = (float(ordered[middle]) if len(ordered) % 2
+                                 else (ordered[middle - 1] + ordered[middle]) / 2.0)
+    out["mean_rank_unseen"] = sum(ordered) / len(ordered)
+
+    for pct in PERCENTAGES:
+        cutoff = int(universe_size * (pct / 100.0))
+        recall = sum(1 for r in ordered if r <= cutoff) / n_targets
+        out["fold_enrichment_top_{}_pct".format(pct)] = recall / (pct / 100.0)
+    for k in K_THRESHOLDS:
+        hits = sum(1 for r in ordered if r <= k)
+        out["recall_at_{}".format(k)] = hits / n_targets
+        out["precision_at_{}".format(k)] = hits / k
+    return out
+
+
+def bootstrap(hit_ranks, universe_size, n_boot, seed, alpha=0.05):
+    """Percentile CI by resampling the target genes with replacement."""
+    point = metrics_from_ranks(hit_ranks, len(hit_ranks), universe_size)
+    if not hit_ranks:
+        return point, {}
+
+    rng = random.Random(seed)
+    n = len(hit_ranks)
+    draws = {key: [] for key in point}
+    for _ in range(n_boot):
+        sample = [hit_ranks[rng.randrange(n)] for _ in range(n)]
+        for key, value in metrics_from_ranks(sample, n, universe_size).items():
+            if not (isinstance(value, float) and math.isnan(value)):
+                draws[key].append(value)
+
+    bounds = {}
+    lo_i = int(alpha / 2 * n_boot)
+    hi_i = min(int((1 - alpha / 2) * n_boot), n_boot - 1)
+    for key, values in draws.items():
+        if not values:
+            continue
+        values.sort()
+        bounds[key] = (values[min(lo_i, len(values) - 1)],
+                       values[min(hi_i, len(values) - 1)])
+    return point, bounds
+
+
+def logit(p, eps=1e-9):
+    p = min(max(p, eps), 1 - eps)
+    return math.log(p / (1 - p))
+
+
+def late_fusion(rows_a, rows_b):
+    """Sum the log-odds of two models, on the genes they share.
+
+    Under conditional independence this is the posterior combination Reviewer 4
+    described: one model supplies the prior from background knowledge, the other
+    the likelihood from experimental data.
+    """
+    a = {g: (t, p) for g, t, p in rows_a}
+    b = {g: p for g, _, p in rows_b}
+    shared = sorted(set(a) & set(b))
+    fused = []
+    for gene in shared:
+        truth, p_a = a[gene]
+        score = logit(p_a) + logit(b[gene])
+        # Map back to a probability so downstream ranking is unchanged in order.
+        fused.append((gene, truth, 1.0 / (1.0 + math.exp(-score))))
+    return fused, len(shared), len(a), len(b)
+
+
+def score_one(rows, targets, n_boot, seed):
+    ranks, universe = rank_unseen(rows)
+    hit_ranks = [ranks[g] for g in targets if g in ranks]
+    point, bounds = bootstrap(hit_ranks, universe, n_boot, seed)
+    return point, bounds, len(hit_ranks), universe
+
+
+def main():
+    here = os.path.dirname(os.path.abspath(__file__))
+    root = os.path.abspath(os.path.join(here, "..", ".."))
+
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--predictions", default=os.path.join(here, "paper_predictions"))
+    parser.add_argument("--lookup", default=os.path.join(here, "experiment_lookup.tsv"))
+    parser.add_argument("--disease-dir",
+                        default=os.path.join(root, "data", "kiml_data", "diseases"))
+    parser.add_argument("--n-boot", type=int, default=2000)
+    parser.add_argument("--seed", type=int, default=1)
+    parser.add_argument("-o", "--out", default=os.path.join(here, "revision_metrics.tsv"))
+    args = parser.parse_args()
+
+    with open(args.lookup) as handle:
+        lookup = list(csv.DictReader(handle, delimiter="\t"))
+
+    by_disease = {}
+    for entry in lookup:
+        by_disease.setdefault(entry["disease"], {})[entry["paper_variant"]] = entry["experiment_id"]
+
+    results = []
+    print("{:24}{:12}{:>8}{:>10}  {}".format("disease", "method", "targets",
+                                             "median", "95% CI"))
+    print("-" * 74)
+
+    for disease, variants in by_disease.items():
+        target_file = DISEASE_TARGETS.get(disease)
+        if not target_file:
+            continue
+        target_path = os.path.join(args.disease_dir, target_file)
+        if not os.path.exists(target_path):
+            print("  [skip] {}: no target list".format(disease))
+            continue
+        with open(target_path) as handle:
+            targets = {line.strip() for line in handle if line.strip()}
+
+        loaded = {}
+        for variant, experiment in variants.items():
+            path = os.path.join(args.predictions, "{}_probabilities.tsv".format(experiment))
+            if os.path.exists(path):
+                loaded[variant] = load_predictions(path)
+            else:
+                print("  [missing] {} {} ({})".format(disease, variant, experiment))
+
+        # The three published configurations, plus the fusion of the two
+        # single-source models.
+        to_score = dict(loaded)
+        if "GNN" in loaded and "C-GNN" in loaded:
+            fused, shared, n_a, n_b = late_fusion(loaded["GNN"], loaded["C-GNN"])
+            to_score["Late-fusion"] = fused
+            # Fusion lives on the intersection. If that differs from either
+            # model's universe, the fold-enrichment denominators differ too and
+            # the fusion row is not directly comparable with the others.
+            if shared != n_a or shared != n_b:
+                print("  [note] {}: fusion defined on {} genes; GNN has {}, "
+                      "C-GNN has {} - denominators differ".format(
+                          disease, shared, n_a, n_b))
+
+        for method, rows in to_score.items():
+            point, bounds, n_targets, universe = score_one(
+                rows, targets, args.n_boot, args.seed)
+            record = {"disease": disease, "method": method,
+                      "experiment": variants.get(method, "derived"),
+                      "n_targets": n_targets, "universe_size": universe,
+                      "n_boot": args.n_boot}
+            for key, value in point.items():
+                record[key] = round(value, 4) if isinstance(value, float) else value
+                if key in bounds:
+                    record[key + "_lo"] = round(bounds[key][0], 4)
+                    record[key + "_hi"] = round(bounds[key][1], 4)
+            results.append(record)
+
+            median = point["median_rank_unseen"]
+            ci = bounds.get("median_rank_unseen")
+            print("{:24}{:12}{:>8}{:>10}  {}".format(
+                disease, method, n_targets,
+                "-" if math.isnan(median) else "{:g}".format(median),
+                "[{:g}, {:g}]".format(*ci) if ci else "-"))
+
+    if not results:
+        print("\nNothing scored. Is --predictions pointing at the collected files?")
+        return
+
+    columns = list(results[0])
+    for record in results:
+        for key in record:
+            if key not in columns:
+                columns.append(key)
+    with open(args.out, "w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=columns, delimiter="\t")
+        writer.writeheader()
+        writer.writerows(results)
+    print("\nWrote {} rows -> {}".format(len(results), args.out))
+
+
+if __name__ == "__main__":
+    main()
