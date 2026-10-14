@@ -37,7 +37,12 @@ METHODS = [
     ("GNN", "speos", "ll_only", "GNN (experimental only)"),
     ("C-GNN", "speos", "hl_only", "C-GNN (knowledge only)"),
     ("KI-GNN", "speos", "hl_ll", "KI-GNN (KIML)"),
-    ("Popularity", "popularity", "", "Popularity (PubMed count)"),
+    # Primary baseline: counts restricted to the models' knowledge cutoff.
+    ("Popularity", "popularity", "", "Popularity (pre-2022-10 PubMed count)"),
+    # Secondary: counts of all dates, including post-split literature the models
+    # never saw. Deliberately favours the baseline; shown because losing even to
+    # that version is the stronger claim.
+    ("Pop (all dates)", "popularity_alldates", "", "Popularity (all-date PubMed count)"),
 ]
 
 # Diseases reported in the manuscript, in manuscript order.
@@ -172,8 +177,9 @@ def load_popularity(tsv_path):
 
 
 def get(paper, popularity, method_key, source, tag, disease, metric):
-    if source == "popularity":
-        return popularity.get(disease, {}).get(metric)
+    """popularity is {source_name: {disease: {metric: value}}}."""
+    if source in popularity:
+        return popularity[source].get(disease, {}).get(metric)
     return paper.get((source, tag), {}).get(disease, {}).get(metric)
 
 
@@ -249,8 +255,19 @@ def write_readme(ws, popularity, cutoff_applied):
          "1% fold enrichment for the RF arm should be rechecked before resubmission.", False),
     ]
     if cutoff_applied:
-        lines += [("4. Paper counts are restricted to publications before 2022-10-01, "
-                   "matching the models' knowledge cutoff.", False)]
+        lines += [
+            ("4. The 'Popularity' column counts only publications before 2022-10-01, matching the "
+             "models' knowledge cutoff. 'Pop (all dates)' counts papers of any date, including "
+             "post-split literature the models never saw, and is reported alongside because losing "
+             "even to that inflated version is the stronger claim. Post-split target genes gained "
+             "post-cutoff papers faster than the gene population at large (mean 5.7 vs 3.6 for DEE), "
+             "i.e. a gene accrues literature BECAUSE it is identified as a disease gene - which is "
+             "exactly why the cutoff column is the fair comparator.", False),
+            ("5. Applying the cutoff also collapsed the tie at the API cap from 5,378 genes (28.2%) "
+             "to 162 (0.8%), so the confidence ranges in this workbook are far tighter than they "
+             "would be on all-date counts. Ordering among the 5,378 genes that originally hit the "
+             "cap still reflects which 100 papers the API returned rather than true publication "
+             "volume; see caveat 1.", False)]
     else:
         lines += [("4. PROVISIONAL: counts currently include papers of ALL dates, including "
                    "those published after the temporal split. This favours the baseline "
@@ -271,7 +288,11 @@ def write_headline(ws, paper, popularity, diseases):
     """Paper's Summary layout, with Popularity appended to each metric block."""
     labels = [m[0] for m in METHODS]
     ws.cell(row=1, column=1, value="Headline metrics: manuscript configurations vs popularity baseline").font = Font(bold=True, size=12)
-    ws.cell(row=2, column=1, value="Best value per disease per metric shaded green. Popularity column shaded amber.").font = Font(italic=True, size=9)
+    ws.cell(row=2, column=1,
+            value="Best value per disease per metric shaded green. The two baseline columns are shaded amber: "
+                  "'Popularity' respects the 2022-10-01 cutoff and is the fair comparator; 'Pop (all dates)' "
+                  "also counts post-split papers the models never saw, and so favours the baseline."
+            ).font = Font(italic=True, size=9)
 
     row = 4
     for metric_key in HEADLINE:
@@ -298,7 +319,7 @@ def write_headline(ws, paper, popularity, diseases):
                 cell.number_format = fmt
                 cell.border = BOX
                 cell.alignment = Alignment(horizontal="center")
-                if source == "popularity":
+                if source.startswith("popularity"):
                     cell.fill = POP_FILL
                 values.append(val)
 
@@ -345,12 +366,13 @@ def write_all_metrics(ws, paper, popularity, diseases):
                 cell.number_format = fmt
                 cell.border = BOX
                 cell.alignment = Alignment(horizontal="center")
-                if source == "popularity":
+                if source.startswith("popularity"):
                     cell.fill = POP_FILL
                 values.append(val)
 
-            lo = popularity.get(key, {}).get(metric_key + "_lo")
-            hi = popularity.get(key, {}).get(metric_key + "_hi")
+            primary = popularity["popularity"]
+            lo = primary.get(key, {}).get(metric_key + "_lo")
+            hi = primary.get(key, {}).get(metric_key + "_hi")
             if isinstance(lo, float) and isinstance(hi, float):
                 digits = 0 if "rank" in metric_key else (2 if "fold" in metric_key else 4)
                 band = "{:.{d}f} - {:.{d}f}".format(lo, hi, d=digits)
@@ -421,12 +443,12 @@ def write_recall_k(ws, paper, popularity, diseases):
                 cell.number_format = "0.0000"
                 cell.border = BOX
                 cell.alignment = Alignment(horizontal="center")
-                if source == "popularity":
+                if source.startswith("popularity"):
                     cell.fill = POP_FILL
                 values[name] = val
 
             # Compare against the top of the popularity band, not its median.
-            pop_hi = popularity.get(key, {}).get(metric_key + "_hi")
+            pop_hi = popularity["popularity"].get(key, {}).get(metric_key + "_hi")
             kignn = values.get("KI-GNN")
             verdict = ""
             if isinstance(kignn, (int, float)) and isinstance(pop_hi, (int, float)):
@@ -447,7 +469,7 @@ def write_recall_k(ws, paper, popularity, diseases):
     ws.column_dimensions[get_column_letter(3 + len(labels))].width = 24
 
 
-def write_popularity_detail(ws, popularity, diseases):
+def write_popularity_detail(ws, primary, diseases):
     ws.cell(row=1, column=1, value="Popularity baseline - full output with tie-break ranges").font = Font(bold=True, size=12)
     ws.cell(row=2, column=1, value="Median [min - max] over 20 random tie-break orderings. A wide range means "
                                    "the metric is set by tie-breaking rather than by paper count.").font = Font(italic=True, size=9)
@@ -462,7 +484,7 @@ def write_popularity_detail(ws, popularity, diseases):
     row += 1
 
     for key, display, group in diseases:
-        data = popularity.get(key)
+        data = primary.get(key)
         if not data:
             continue
         ws.cell(row=row, column=1, value=display).font = BOLD
@@ -489,7 +511,7 @@ def write_popularity_detail(ws, popularity, diseases):
         ws.column_dimensions[get_column_letter(6 + j)].width = 22
 
 
-def write_literature_bias(ws, popularity, diseases):
+def write_literature_bias(ws, primary, diseases):
     ws.cell(row=1, column=1, value="Literature-volume bias check (Reviewer 1, comment 6)").font = Font(bold=True, size=12)
     note = ("Median rank, on paper count alone, of genes already on the panel at 2022-09 "
             "('known') versus genes added afterwards ('new'). If curated disease genes were "
@@ -511,7 +533,7 @@ def write_literature_bias(ws, popularity, diseases):
     row += 1
 
     for key, display, _ in diseases:
-        data = popularity.get(key)
+        data = primary.get(key)
         if not data:
             continue
         ws.cell(row=row, column=1, value=display).font = BOLD
@@ -531,6 +553,114 @@ def write_literature_bias(ws, popularity, diseases):
         ws.column_dimensions[get_column_letter(j)].width = 20
 
 
+DISEASE_TARGET_FILES = {
+    "dee": "DEE-2025_03_vs_2022_09.txt",
+    "ad_dee": "AD_DEE-2022_09_to_2025_03.txt",
+    "ar_dee": "AR_DEE-2022_09_to_2025_03.txt",
+    "aminoacidopathy": "Aminoacidopathy-2025_06_vs_2022_09.txt",
+    "arthrogryposis": "Arthrogryposis-2025_06_vs_2022_09.txt",
+    "ataxia": "Ataxia_paed-2025_06_vs_2022_09.txt",
+    "cp": "CP-2025_06_vs_2022_09.txt",
+    "intellectual_disability": "Intellectual-disability-2025_06_vs_2022_09.txt",
+    "microcephaly": "Microcephaly-2025_06_vs_2022_09.txt",
+    "mnd": "MND-2025_06_vs_2022_09.txt",
+    "skeletal_dysplasia": "Skeletal-dysplasia-diff-2025_06_vs_2022_09.txt",
+    "platelet_disorder": "Bleeding_and_Platelet_Disorders-2026-02_vs_2022-09.txt",
+    "bone_marrow_failure": "Bone_Marrow_Failure-2026-02_vs_2022-09.txt",
+    "cataract": "Cataract-2026-02_vs_2022-09.txt",
+}
+
+
+def write_temporal_evidence(ws, counts_path, disease_dir, diseases):
+    """R1.7: did post-split target genes already have disease literature pre-cutoff?"""
+    ws.cell(row=1, column=1,
+            value="Prior disease literature before the cutoff (Reviewer 1, comment 7)").font = Font(bold=True, size=12)
+    note = ("R1.7: \"A gene added to a panel in 2024 may already have had substantial "
+            "disease-related literature before September 2022 ... otherwise this experiment may "
+            "partly measure prediction of subsequent panel inclusion rather than genuine feature "
+            "discovery.\"  For every post-split target gene we counted its PRE-CUTOFF PubMed "
+            "papers that mention the disease by keyword. Genes with zero such papers form the "
+            "conservative 'genuinely novel' stratum, for which the temporal split cannot be "
+            "measuring curation lag. Keyword matching favours recall, so the prior-evidence share "
+            "is an UPPER bound and the novel stratum is correspondingly conservative. Note this is "
+            "a proxy for a curated gene-disease assertion, not proof of one.")
+    cell = ws.cell(row=2, column=1, value=note)
+    cell.font = Font(italic=True, size=9)
+    cell.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.row_dimensions[2].height = 75
+
+    with open(counts_path) as handle:
+        counts = {r["gene"]: r for r in csv.DictReader(handle, delimiter="\t")}
+
+    row = 4
+    headers = ["Disease", "Targets", "With prior evidence", "% prior",
+               "Genuinely novel", "% novel", "With >=3 prior papers"]
+    for j, text in enumerate(headers, start=1):
+        ws.cell(row=row, column=j, value=text)
+    style_header(ws, row, len(headers))
+    row += 1
+
+    totals = [0, 0, 0]
+    for key, display, _ in diseases:
+        target_file = DISEASE_TARGET_FILES.get(key)
+        if not target_file:
+            continue
+        path = os.path.join(disease_dir, target_file)
+        if not os.path.exists(path):
+            continue
+        with open(path) as handle:
+            targets = [g.strip() for g in handle if g.strip()]
+        targets = [g for g in targets if g in counts]
+        column = key + "_evidence"
+        if not targets or column not in next(iter(counts.values())):
+            continue
+        prior = [g for g in targets if int(counts[g][column]) > 0]
+        strong = [g for g in targets if int(counts[g][column]) >= 3]
+        totals[0] += len(targets)
+        totals[1] += len(prior)
+        totals[2] += len(strong)
+
+        ws.cell(row=row, column=1, value=display).font = BOLD
+        ws.cell(row=row, column=2, value=len(targets))
+        ws.cell(row=row, column=3, value=len(prior))
+        ws.cell(row=row, column=4, value=len(prior) / len(targets)).number_format = "0%"
+        ws.cell(row=row, column=5, value=len(targets) - len(prior))
+        ws.cell(row=row, column=6, value=1 - len(prior) / len(targets)).number_format = "0%"
+        ws.cell(row=row, column=7, value=len(strong))
+        for col in range(1, len(headers) + 1):
+            ws.cell(row=row, column=col).border = BOX
+            if col > 1:
+                ws.cell(row=row, column=col).alignment = Alignment(horizontal="center")
+        # Flag diseases where most targets already had literature.
+        if len(prior) / len(targets) >= 0.5:
+            ws.cell(row=row, column=4).fill = PatternFill("solid", fgColor="F8CBAD")
+        row += 1
+
+    if totals[0]:
+        ws.cell(row=row, column=1, value="ALL").font = BOLD
+        ws.cell(row=row, column=2, value=totals[0]).font = BOLD
+        ws.cell(row=row, column=3, value=totals[1]).font = BOLD
+        ws.cell(row=row, column=4, value=totals[1] / totals[0]).number_format = "0%"
+        ws.cell(row=row, column=5, value=totals[0] - totals[1]).font = BOLD
+        ws.cell(row=row, column=6, value=1 - totals[1] / totals[0]).number_format = "0%"
+        ws.cell(row=row, column=7, value=totals[2]).font = BOLD
+        for col in range(1, len(headers) + 1):
+            ws.cell(row=row, column=col).border = Border(top=Side(style="medium", color="1F3864"))
+            if col > 1:
+                ws.cell(row=row, column=col).alignment = Alignment(horizontal="center")
+        row += 2
+
+    ws.cell(row=row, column=1,
+            value="OUTSTANDING: every reported metric still needs re-running separately on the "
+                  "novel stratum versus the prior-evidence stratum. That is the actual answer to "
+                  "R1.7 and requires the per-gene model prediction files.").font = Font(
+        italic=True, size=9, color="C00000")
+
+    ws.column_dimensions["A"].width = 30
+    for j in range(2, len(headers) + 1):
+        ws.column_dimensions[get_column_letter(j)].width = 20
+
+
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     root = os.path.abspath(os.path.join(here, "..", ".."))
@@ -538,10 +668,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--supp2", default=os.path.join(root, "rebuttal", "Supp_Data_2.xlsx"))
-    parser.add_argument("--popularity", default=os.path.join(here, "popularity_rank_metrics.tsv"))
+    parser.add_argument("--popularity", default=os.path.join(here, "popularity_rank_metrics_cutoff.tsv"),
+                        help="primary baseline: counts restricted to the 2022-10-01 cutoff")
+    parser.add_argument("--popularity-alldates", default=os.path.join(here, "popularity_rank_metrics.tsv"),
+                        help="secondary baseline: counts of all dates (optional)")
+    parser.add_argument("--counts", default=os.path.join(here, "pubmed_counts_2022_09.tsv"),
+                        help="per-gene pre-cutoff counts and disease evidence, for the R1.7 sheet")
+    parser.add_argument("--disease-dir", default=os.path.join(root, "data", "kiml_data", "diseases"))
     parser.add_argument("-o", "--out", default=os.path.join(root, "rebuttal", "Supp_Data_3_popularity.xlsx"))
-    parser.add_argument("--cutoff-applied", action="store_true",
-                        help="set when the popularity TSV was produced with --articles")
+    parser.add_argument("--cutoff-applied", action="store_true", default=True,
+                        help="set when the primary popularity TSV respects the date cutoff")
     args = parser.parse_args()
 
     print("Reading manuscript results from {}".format(args.supp2))
@@ -549,20 +685,34 @@ def main():
     for (source, tag), table in sorted(paper.items()):
         print("  {:8} {:8} -> {} diseases".format(source, tag, len(table)))
 
-    print("Reading popularity baseline from {}".format(args.popularity))
-    popularity = load_popularity(args.popularity)
-    print("  {} diseases".format(len(popularity)))
+    print("Reading popularity baseline (cutoff) from {}".format(args.popularity))
+    primary = load_popularity(args.popularity)
+    print("  {} diseases".format(len(primary)))
 
-    all_diseases = PAPER_DISEASES + [d for d in EXTRA_DISEASES if d[0] in popularity]
+    popularity = {"popularity": primary}
+    if args.popularity_alldates and os.path.exists(args.popularity_alldates):
+        print("Reading popularity baseline (all dates) from {}".format(args.popularity_alldates))
+        popularity["popularity_alldates"] = load_popularity(args.popularity_alldates)
+        print("  {} diseases".format(len(popularity["popularity_alldates"])))
+    else:
+        print("[warn] no all-dates baseline; that column will be blank.")
+        popularity["popularity_alldates"] = {}
+
+    all_diseases = PAPER_DISEASES + [d for d in EXTRA_DISEASES if d[0] in primary]
 
     wb = openpyxl.Workbook()
-    write_readme(wb.active, popularity, args.cutoff_applied)
+    write_readme(wb.active, primary, args.cutoff_applied)
     wb.active.title = "README"
     write_headline(wb.create_sheet("Headline comparison"), paper, popularity, PAPER_DISEASES)
     write_all_metrics(wb.create_sheet("All metrics"), paper, popularity, PAPER_DISEASES)
     write_recall_k(wb.create_sheet("Recall across K"), paper, popularity, PAPER_DISEASES)
-    write_popularity_detail(wb.create_sheet("Popularity detail"), popularity, all_diseases)
-    write_literature_bias(wb.create_sheet("Literature bias"), popularity, all_diseases)
+    if os.path.exists(args.counts):
+        write_temporal_evidence(wb.create_sheet("Prior literature (R1.7)"),
+                                args.counts, args.disease_dir, all_diseases)
+    else:
+        print("[warn] {} not found; skipping the R1.7 sheet.".format(args.counts))
+    write_popularity_detail(wb.create_sheet("Popularity detail"), primary, all_diseases)
+    write_literature_bias(wb.create_sheet("Literature bias"), primary, all_diseases)
     wb.save(args.out)
     print("\nWrote {}".format(args.out))
     print("Sheets: {}".format(", ".join(wb.sheetnames)))

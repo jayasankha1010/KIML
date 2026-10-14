@@ -89,6 +89,23 @@ def load_cutoff_pmids(articles_path, cutoff):
     return keep
 
 
+def load_precomputed_counts(path, column="n_papers_pre_cutoff"):
+    """Read per-gene counts from the summary TSV built by extract_pubmed_counts.py."""
+    counts = {}
+    at_cap = set()
+    with open(path, newline="") as handle:
+        for row in csv.DictReader(handle, delimiter="\t"):
+            gene = row["gene"].strip()
+            counts[gene] = int(row[column])
+            total = row.get("n_papers_total", "")
+            # Genes at the API cap have a *sampled* count, not a true one: their
+            # relative order reflects which 100 papers were returned, not how
+            # heavily studied they are. Tracked so it can be reported.
+            if total and int(total) >= 100:
+                at_cap.add(gene)
+    return counts, at_cap
+
+
 def load_counts(genes_csv, allowed_pmids):
     """Map gene -> number of papers, optionally restricted to allowed_pmids."""
     counts = {}
@@ -218,9 +235,13 @@ def main():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--genes", default=os.path.join(root, "kiml", "genes_to_ids.csv"),
                         help="gene -> PubMed IDs CSV (ragged; col 0 is the gene)")
+    parser.add_argument("--counts", default=None,
+                        help="pubmed_counts_2022_09.tsv from extract_pubmed_counts.py. "
+                             "Preferred: counts are already date-filtered. Overrides --genes.")
     parser.add_argument("--articles", default=None,
-                        help="pubmed_articles_v5.csv, for the publication-date cutoff. "
-                             "Omit to count all papers regardless of date (leaky).")
+                        help="pubmed_articles_v5.csv, to apply the date cutoff directly from "
+                             "the raw article dump. Slower than --counts and rarely needed. "
+                             "Omit both to count all papers regardless of date (leaky).")
     parser.add_argument("--cutoff", default=CUTOFF_DEFAULT,
                         help="count only papers published before this date (YYYY-MM-DD)")
     parser.add_argument("--disease-dir", default=os.path.join(root, "data", "kiml_data", "diseases"))
@@ -237,16 +258,19 @@ def main():
     print(" Popularity baseline")
     print("=" * 60)
 
-    allowed = None
-    if args.articles:
+    at_cap = set()
+    if args.counts:
+        print("\nUsing pre-filtered counts from {}".format(args.counts))
+        print("  (papers published before {})".format(cutoff.date()))
+        counts, at_cap = load_precomputed_counts(args.counts)
+    elif args.articles:
         print("\nApplying publication-date cutoff from {}".format(args.articles))
-        allowed = load_cutoff_pmids(args.articles, cutoff)
+        counts = load_counts(args.genes, load_cutoff_pmids(args.articles, cutoff))
     else:
-        print("\n[WARNING] No --articles given: counting papers of ALL dates.")
-        print("          Post-split literature leaks into the ranking, which")
-        print("          inflates this baseline relative to the ML models.")
-
-    counts = load_counts(args.genes, allowed)
+        print("\n[WARNING] Neither --counts nor --articles given: counting papers of")
+        print("          ALL dates. Post-split literature leaks into the ranking,")
+        print("          which inflates this baseline relative to the ML models.")
+        counts = load_counts(args.genes, None)
     print("\nLoaded {} genes.".format(len(counts)))
     if not counts:
         sys.exit("No genes loaded; check --genes.")
@@ -259,6 +283,10 @@ def main():
         print("[WARNING] That tie spans ranks 1-{}. Any metric with a cutoff".format(n_top))
         print("          inside it is set by tie-break order, not popularity.")
         print("          Compare the *_lo / *_hi band, not the point estimate.")
+    if at_cap:
+        print("{} genes ({:.1f}%) hit the 100-PMID API cap before date filtering;".format(
+            len(at_cap), 100.0 * len(at_cap) / len(counts)))
+        print("  their counts are a sample, so order among them is noise, not volume.")
 
     print("\nScoring {} diseases over {} tie-breaks...".format(len(args.diseases), args.seeds))
     rows = []
