@@ -661,6 +661,267 @@ def write_temporal_evidence(ws, counts_path, disease_dir, diseases):
         ws.column_dimensions[get_column_letter(j)].width = 20
 
 
+REVISION_METRICS = [
+    ("median_rank_unseen", "Median rank", 1, True),
+    ("mean_rank_unseen", "Mean rank", 1, True),
+    ("fold_enrichment_top_1_pct", "Fold enr. @1%", 2, False),
+    ("fold_enrichment_top_5_pct", "Fold enr. @5%", 2, False),
+    ("recall_at_50", "Recall @50", 4, False),
+    ("recall_at_100", "Recall @100", 4, False),
+    ("recall_at_250", "Recall @250", 4, False),
+    ("recall_at_1000", "Recall @1000", 4, False),
+]
+
+REVISION_METHOD_ORDER = ["GNN", "C-GNN", "KI-GNN", "Late-fusion"]
+CONTRAST_ORDER = ["KI-GNN - GNN", "KI-GNN - C-GNN", "Late-fusion - KI-GNN"]
+
+
+def load_tsv(path):
+    if not path or not os.path.exists(path):
+        return []
+    with open(path) as handle:
+        return list(csv.DictReader(handle, delimiter="\t"))
+
+
+def _number(row, key, digits):
+    try:
+        return round(float(row[key]), digits)
+    except (TypeError, ValueError, KeyError):
+        return None
+
+
+def write_bootstrap_cis(ws, rows, diseases):
+    """R1.10: every metric with a bootstrap confidence interval."""
+    ws.cell(row=1, column=1,
+            value="Bootstrap confidence intervals (Reviewer 1, comment 10)").font = Font(bold=True, size=12)
+    note = ("R1.10 asks for confidence intervals in the main results. Each interval is a 95% "
+            "percentile bootstrap over 2,000 resamples of that disease's post-split target "
+            "genes, holding the model fixed. It answers: how much of the reported value is an "
+            "accident of which genes happened to be curated after the cutoff? Point estimates "
+            "reproduce the published numbers exactly - the metric code is copied from "
+            "results_processing/evaluate_results.py. 'Late-fusion' is not a published "
+            "configuration; see the 'Late fusion' sheet.")
+    cell = ws.cell(row=2, column=1, value=note)
+    cell.font = Font(italic=True, size=9)
+    cell.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.row_dimensions[2].height = 60
+
+    indexed = {(r["disease"], r["method"]): r for r in rows}
+
+    row = 4
+    headers = ["Disease", "Method", "Experiment", "Targets"] + \
+              [label for _, label, _, _ in REVISION_METRICS]
+    for j, text in enumerate(headers, start=1):
+        ws.cell(row=row, column=j, value=text)
+    style_header(ws, row, len(headers))
+    ws.freeze_panes = ws.cell(row=row + 1, column=3)
+    row += 1
+
+    for key, display, _ in diseases:
+        first = row
+        for method in REVISION_METHOD_ORDER:
+            record = indexed.get((key, method))
+            if not record:
+                continue
+            ws.cell(row=row, column=1, value=display).font = Font(size=9)
+            ws.cell(row=row, column=2, value=method).font = (
+                BOLD if method == "KI-GNN" else Font(size=10))
+            ws.cell(row=row, column=3, value=record.get("experiment"))
+            ws.cell(row=row, column=4, value=_number(record, "n_targets", 0))
+            for j, (metric, _, digits, _) in enumerate(REVISION_METRICS):
+                point = _number(record, metric, digits)
+                lo = _number(record, metric + "_lo", digits)
+                hi = _number(record, metric + "_hi", digits)
+                if point is None:
+                    continue
+                text = "{:g}".format(point)
+                if lo is not None and hi is not None:
+                    text += "  [{:g}, {:g}]".format(lo, hi)
+                cell = ws.cell(row=row, column=5 + j, value=text)
+                cell.alignment = Alignment(horizontal="center")
+                cell.font = Font(size=9)
+                cell.border = BOX
+                if method == "Late-fusion":
+                    cell.fill = POP_FILL
+            row += 1
+        if row > first:
+            for col in range(1, len(headers) + 1):
+                ws.cell(row=first, column=col).border = Border(
+                    top=Side(style="medium", color="1F3864"))
+
+    ws.column_dimensions["A"].width = 28
+    ws.column_dimensions["B"].width = 13
+    ws.column_dimensions["C"].width = 12
+    ws.column_dimensions["D"].width = 9
+    for j in range(len(REVISION_METRICS)):
+        ws.column_dimensions[get_column_letter(5 + j)].width = 24
+
+
+def write_paired_contrasts(ws, rows, diseases):
+    """R1.10 done properly: paired difference on the same genes."""
+    ws.cell(row=1, column=1,
+            value="Paired contrasts (Reviewer 1, comment 10)").font = Font(bold=True, size=12)
+    note = ("Comparing two marginal confidence intervals is the wrong test and is badly "
+            "under-powered: both models are scored on the SAME post-split genes, so "
+            "'these targets are hard for everyone' inflates both intervals and masks real "
+            "differences. Each row below resamples genes once per draw and takes the "
+            "difference, which cancels that shared difficulty. Negative favours the first "
+            "model for rank metrics (lower rank is better) and the second for recall and "
+            "enrichment. 'Significant' means the 95% interval excludes zero. "
+            "Validation: two models differing by a certain 50 ranks produced almost entirely "
+            "overlapping marginal intervals, while this test recovered -50 [-50, -50].")
+    cell = ws.cell(row=2, column=1, value=note)
+    cell.font = Font(italic=True, size=9)
+    cell.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.row_dimensions[2].height = 75
+
+    indexed = {(r["disease"], r["contrast"]): r for r in rows}
+
+    row = 4
+    headers = ["Disease", "Contrast", "Paired genes"] + \
+              [label for _, label, _, _ in REVISION_METRICS]
+    for j, text in enumerate(headers, start=1):
+        ws.cell(row=row, column=j, value=text)
+    style_header(ws, row, len(headers))
+    ws.freeze_panes = ws.cell(row=row + 1, column=3)
+    row += 1
+
+    for key, display, _ in diseases:
+        first = row
+        for contrast in CONTRAST_ORDER:
+            record = indexed.get((key, contrast))
+            if not record:
+                continue
+            ws.cell(row=row, column=1, value=display).font = Font(size=9)
+            ws.cell(row=row, column=2, value=contrast)
+            ws.cell(row=row, column=3, value=_number(record, "n_paired_targets", 0))
+            for j, (metric, _, digits, lower_better) in enumerate(REVISION_METRICS):
+                difference = _number(record, metric, digits)
+                lo = _number(record, metric + "_lo", digits)
+                hi = _number(record, metric + "_hi", digits)
+                if difference is None:
+                    continue
+                significant = record.get(metric + "_sig") == "yes"
+                text = "{:+g}".format(difference)
+                if lo is not None and hi is not None:
+                    text += "  [{:+g}, {:+g}]".format(lo, hi)
+                cell = ws.cell(row=row, column=4 + j, value=text)
+                cell.alignment = Alignment(horizontal="center")
+                cell.font = Font(size=9, bold=significant)
+                cell.border = BOX
+                if significant:
+                    # Does the significant difference favour the first model?
+                    favours_first = (difference < 0) if lower_better else (difference > 0)
+                    cell.fill = BEST_FILL if favours_first else PatternFill(
+                        "solid", fgColor="F8CBAD")
+            row += 1
+        if row > first:
+            for col in range(1, len(headers) + 1):
+                ws.cell(row=first, column=col).border = Border(
+                    top=Side(style="medium", color="1F3864"))
+
+    row += 1
+    ws.cell(row=row, column=1,
+            value="Green = significant and favours the first model. "
+                  "Orange = significant and favours the second.").font = Font(italic=True, size=9)
+
+    ws.column_dimensions["A"].width = 28
+    ws.column_dimensions["B"].width = 22
+    ws.column_dimensions["C"].width = 13
+    for j in range(len(REVISION_METRICS)):
+        ws.column_dimensions[get_column_letter(4 + j)].width = 26
+
+
+def write_late_fusion(ws, metric_rows, contrast_rows, diseases):
+    """R1.5d and R4.1: concatenation versus log-odds summation."""
+    ws.cell(row=1, column=1,
+            value="Late fusion vs concatenation (Reviewer 1 comment 5d; Reviewer 4 comment 1)").font = Font(bold=True, size=12)
+    note = ("R1 asked for 'the current concatenation strategy versus learned or late fusion'. "
+            "R4 asked for the two-context idea to be cast as Bayesian inference, a prior "
+            "integrated with a likelihood. These are the same experiment: summing the "
+            "log-odds of the knowledge-only model (C-GNN) and the experimental-only model "
+            "(GNN) IS prior x likelihood under conditional independence. Late fusion is "
+            "therefore both the alternative fusion strategy and the Bayesian formulation. "
+            "It requires no retraining - it recombines predictions the manuscript already "
+            "reports. Where concatenation (KI-GNN) wins, the conditional independence "
+            "assumption is failing: literature-derived knowledge and experimental signal are "
+            "correlated, and a jointly-learned representation captures structure that naive "
+            "Bayesian combination cannot.")
+    cell = ws.cell(row=2, column=1, value=note)
+    cell.font = Font(italic=True, size=9)
+    cell.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.row_dimensions[2].height = 90
+
+    by_method = {(r["disease"], r["method"]): r for r in metric_rows}
+    by_contrast = {r["disease"]: r for r in contrast_rows
+                   if r["contrast"] == "Late-fusion - KI-GNN"}
+
+    row = 4
+    headers = ["Disease", "GNN", "C-GNN", "KI-GNN (concat)", "Late fusion",
+               "Difference (fusion - concat)", "95% CI", "Significant", "Winner"]
+    for j, text in enumerate(headers, start=1):
+        ws.cell(row=row, column=j, value=text)
+    style_header(ws, row, len(headers))
+    row += 1
+
+    wins = {"concatenation": 0, "late fusion": 0, "no difference": 0}
+    for key, display, _ in diseases:
+        fusion = by_method.get((key, "Late-fusion"))
+        concat = by_method.get((key, "KI-GNN"))
+        if not fusion or not concat:
+            continue
+        contrast = by_contrast.get(key)
+
+        ws.cell(row=row, column=1, value=display).font = BOLD
+        for j, method in enumerate(["GNN", "C-GNN", "KI-GNN", "Late-fusion"]):
+            record = by_method.get((key, method))
+            ws.cell(row=row, column=2 + j,
+                    value=_number(record, "median_rank_unseen", 1) if record else None
+                    ).alignment = Alignment(horizontal="center")
+
+        if contrast:
+            difference = _number(contrast, "median_rank_unseen", 1)
+            lo = _number(contrast, "median_rank_unseen_lo", 1)
+            hi = _number(contrast, "median_rank_unseen_hi", 1)
+            significant = contrast.get("median_rank_unseen_sig") == "yes"
+            ws.cell(row=row, column=6, value=difference).alignment = Alignment(horizontal="center")
+            ws.cell(row=row, column=7,
+                    value="[{:+g}, {:+g}]".format(lo, hi) if lo is not None else ""
+                    ).alignment = Alignment(horizontal="center")
+            ws.cell(row=row, column=8, value="yes" if significant else "no"
+                    ).alignment = Alignment(horizontal="center")
+            if significant:
+                winner = "concatenation" if difference > 0 else "late fusion"
+            else:
+                winner = "no difference"
+            wins[winner] += 1
+            cell = ws.cell(row=row, column=9, value=winner)
+            cell.alignment = Alignment(horizontal="center")
+            cell.font = Font(bold=significant, size=10)
+            if winner == "concatenation":
+                cell.fill = BEST_FILL
+            elif winner == "late fusion":
+                cell.fill = PatternFill("solid", fgColor="F8CBAD")
+
+        for col in range(1, len(headers) + 1):
+            ws.cell(row=row, column=col).border = BOX
+        row += 1
+
+    row += 1
+    ws.cell(row=row, column=1, value="Significant wins:").font = BOLD
+    ws.cell(row=row, column=2,
+            value="concatenation {}, late fusion {}, no difference {}".format(
+                wins["concatenation"], wins["late fusion"], wins["no difference"]))
+
+    ws.column_dimensions["A"].width = 30
+    for j in range(2, 6):
+        ws.column_dimensions[get_column_letter(j)].width = 15
+    ws.column_dimensions["F"].width = 28
+    ws.column_dimensions["G"].width = 20
+    ws.column_dimensions["H"].width = 12
+    ws.column_dimensions["I"].width = 16
+
+
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     root = os.path.abspath(os.path.join(here, "..", ".."))
@@ -675,6 +936,13 @@ def main():
     parser.add_argument("--counts", default=os.path.join(here, "pubmed_counts_2022_09.tsv"),
                         help="per-gene pre-cutoff counts and disease evidence, for the R1.7 sheet")
     parser.add_argument("--disease-dir", default=os.path.join(root, "data", "kiml_data", "diseases"))
+    revision = os.path.join(root, "additional_experiments", "revision_runs")
+    parser.add_argument("--revision-metrics",
+                        default=os.path.join(revision, "revision_metrics.tsv"),
+                        help="bootstrap CIs per method, from revision_analysis.py")
+    parser.add_argument("--revision-contrasts",
+                        default=os.path.join(revision, "revision_metrics_contrasts.tsv"),
+                        help="paired contrasts, from revision_analysis.py")
     parser.add_argument("-o", "--out", default=os.path.join(root, "rebuttal", "Supp_Data_3_popularity.xlsx"))
     parser.add_argument("--cutoff-applied", action="store_true", default=True,
                         help="set when the primary popularity TSV respects the date cutoff")
@@ -706,6 +974,24 @@ def main():
     write_headline(wb.create_sheet("Headline comparison"), paper, popularity, PAPER_DISEASES)
     write_all_metrics(wb.create_sheet("All metrics"), paper, popularity, PAPER_DISEASES)
     write_recall_k(wb.create_sheet("Recall across K"), paper, popularity, PAPER_DISEASES)
+
+    metric_rows = load_tsv(args.revision_metrics)
+    contrast_rows = load_tsv(args.revision_contrasts)
+    if metric_rows:
+        print("Reading bootstrap CIs from {} ({} rows)".format(
+            args.revision_metrics, len(metric_rows)))
+        write_bootstrap_cis(wb.create_sheet("Bootstrap CIs (R1.10)"),
+                            metric_rows, PAPER_DISEASES)
+    else:
+        print("[warn] no revision metrics found; skipping the CI sheet.")
+    if contrast_rows:
+        print("Reading paired contrasts from {} ({} rows)".format(
+            args.revision_contrasts, len(contrast_rows)))
+        write_paired_contrasts(wb.create_sheet("Paired contrasts (R1.10)"),
+                               contrast_rows, PAPER_DISEASES)
+    if metric_rows and contrast_rows:
+        write_late_fusion(wb.create_sheet("Late fusion (R1.5d, R4.1)"),
+                          metric_rows, contrast_rows, PAPER_DISEASES)
     if os.path.exists(args.counts):
         write_temporal_evidence(wb.create_sheet("Prior literature (R1.7)"),
                                 args.counts, args.disease_dir, all_diseases)

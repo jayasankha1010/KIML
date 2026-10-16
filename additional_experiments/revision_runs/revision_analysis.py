@@ -211,7 +211,11 @@ def late_fusion(rows_a, rows_b):
 
 def score_one(rows, targets, n_boot, seed):
     ranks, universe = rank_unseen(rows)
-    target_ranks = {g: ranks[g] for g in targets if g in ranks}
+    # sorted(), not set order: Python randomises string hashing per process, so
+    # iterating the target set directly gives a different ordering each run and
+    # the seeded bootstrap resamples a differently-ordered list. Point estimates
+    # are unaffected, but the intervals would not be reproducible.
+    target_ranks = {g: ranks[g] for g in sorted(targets) if g in ranks}
     point, bounds = bootstrap(list(target_ranks.values()), universe, n_boot, seed)
     return point, bounds, target_ranks, universe
 

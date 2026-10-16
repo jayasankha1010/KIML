@@ -4,7 +4,7 @@ dee	C-GNN	2141	2141.0	ExpC80	hl_only	results_processing/ExpC80_probabilities.tsv
 dee	KI-GNN	1379	1379.0	ExpA83	IGNN	results_processing/ExpA83_probabilities.tsv
 ad_dee	GNN	1306.5	1306.5	ExpC3	GNN	results_processing/ExpC3_probabilities.tsv
 ad_dee	C-GNN	2594	2594.0	ExpC81	hl_only	results_processing/ExpC81_probabilities.tsv
-ad_dee	KI-GNN	1085	1085.0	ExpB86	IGNN	results_processing/ExpB86_probabilities.tsv
+ad_dee	KI-GNN	1085	1085.0	ExpB86_ad	IGNN	results_processing/ExpB86_ad_probabilities.tsv
 ar_dee	GNN	4748	4748.0	ExpC4	GNN	results_processing/ExpC4_probabilities.tsv
 ar_dee	C-GNN	2551	2551.0	ExpC82	hl_only	results_processing/ExpC82_probabilities.tsv
 ar_dee	KI-GNN	1642	1642.0	ExpB87	IGNN	results_processing/ExpB87_probabilities.tsv
@@ -14,7 +14,7 @@ microcephaly	KI-GNN	3898.5	3898.5	ExpB13	IGNN	results_processing/ExpB13_probabil
 intellectual_disability	GNN	3016	3016.0	ExpC6	GNN	results_processing/ExpC6_probabilities.tsv
 intellectual_disability	C-GNN	5803	5803.0	ExpC84	hl_only	results_processing/ExpC84_probabilities.tsv
 intellectual_disability	KI-GNN	3771	3771.0	ExpB11	IGNN	results_processing/ExpB11_probabilities.tsv
-mnd	GNN	8551	8551.0	ExpCP_	GNN	results_processing/ExpCP__probabilities.tsv
+mnd	GNN	8551	8551.0	ExpB96_mnd	GNN	results_processing/ExpB96_mnd_probabilities.tsv
 mnd	C-GNN	302	302.0	ExpC85	hl_only	results_processing/ExpC85_probabilities.tsv
 mnd	KI-GNN	407	407.0	ExpB9	IGNN	results_processing/ExpB9_probabilities.tsv
 cp	GNN	3338	3338.0	ExpC9	GNN	results_processing/ExpC9_probabilities.tsv
