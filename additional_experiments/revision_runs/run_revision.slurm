@@ -9,8 +9,17 @@
 # 1. Generate the configs:
 #        python additional_experiments/revision_runs/make_configs.py --seeds 5
 #
-# 2. Run ONE task and check both wall-clock and reproduction:
-#        sbatch --array=0 additional_experiments/revision_runs/run_revision.slurm
+# 2. Run ONE task and check both wall-clock and reproduction. Pick the index of
+#    the DEE KI-GNN config, which is the one with a well-known published value.
+#    With the default 9 diseases x 3 variants x 5 seeds the manifest is ordered
+#    disease (alphabetical) -> variant (GNN, CGNN, KIGNN) -> seed, so:
+#
+#        grep -n '^Rev_dee_KIGNN_s1$' external/SPEOS/revision_manifest.txt
+#        # -> line 71, i.e. array index 70
+#        sbatch --array=70 additional_experiments/revision_runs/run_revision.slurm
+#
+#    Do NOT use --array=0 for this check: index 0 is Rev_ad_dee_GNN_s1, a
+#    different disease and configuration.
 #
 #    The DEE KI-GNN median rank published in Table 1 is 1379. SPEOS does not
 #    call torch.manual_seed anywhere, so an exact match is not expected; what
