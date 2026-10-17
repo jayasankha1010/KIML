@@ -142,8 +142,14 @@ def derive_missing_ground_truth(disease_dir, dry_run=False):
 
 
 def build_mapping(disease_dir_rel, disease_dir_abs):
-    """One extensions/mapping.json entry per disease."""
+    """One extensions/mapping.json entry per disease.
+
+    Returns (entries, keys) where keys are the bare disease keys that got an
+    entry. Callers need the bare keys: entry names carry GT_PREFIX, so matching
+    a disease key straight against the names silently matches nothing.
+    """
     mapping = []
+    keys = []
     for key, (gt_file, _) in DISEASES.items():
         if not os.path.exists(os.path.join(disease_dir_abs, gt_file)):
             print("  [skip] {}: {} not found".format(key, gt_file))
@@ -160,7 +166,8 @@ def build_mapping(disease_dir_rel, disease_dir_abs):
             "args": [os.path.join(disease_dir_rel, gt_file)],
             "kwargs": {},
         })
-    return mapping
+        keys.append(key)
+    return mapping, keys
 
 
 def main():
@@ -185,17 +192,24 @@ def main():
     derive_missing_ground_truth(disease_abs, args.dry_run)
 
     print("\nBuilding extensions/mapping.json...")
-    mapping = build_mapping(disease_rel, disease_abs)
+    mapping, known = build_mapping(disease_rel, disease_abs)
     mapping_path = os.path.join(speos, "extensions", "mapping.json")
     if not args.dry_run:
         with open(mapping_path, "w") as handle:
             json.dump(mapping, handle, indent=2)
     print("  {} entries -> {}".format(len(mapping), mapping_path))
 
-    known = {m["name"] for m in mapping}
     config_dir = os.path.join(speos, "configs")
     manifest = []
     generated = []
+
+    stale = [f for f in os.listdir(config_dir)
+             if f.startswith("Rev_") and f.endswith(".yaml")]
+    if stale:
+        print("  removing {} stale generated config(s)".format(len(stale)))
+        if not args.dry_run:
+            for name in stale:
+                os.remove(os.path.join(config_dir, name))
 
     print("\nWriting configs...")
     for disease in args.diseases:
