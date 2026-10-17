@@ -67,17 +67,27 @@ DERIVED = {
     "ar_dee": ("AR_DEE_2025_03.txt", "AR_DEE-2022_09_to_2025_03.txt", "AR_DEE-2022_09.txt"),
 }
 
-# variant -> (datasets json, adjacency list, adjacency_field list)
-PPI = ["BioPlex30293T", "BioPlex30HCT116", "HuRI"]
+# variant -> (datasets json, adjacency list, architecture)
+# Registered in extensions/adjacencies.json pointing at data/kiml_data/ppi/.
+# The built-in speos/adjacencies.json entries use data/ppi/... paths that do
+# not exist in this repo, hence the distinct names.
+PPI = ["kiml_bioplex_293t", "kiml_bioplex_hct116", "kiml_huri"]
 KG = ["pathway", "covaries"]
 VARIANTS = {
-    "GNN": ("./extensions/datasets_ll.json", PPI),
-    "CGNN": ("./extensions/datasets_hl.json", KG),
-    "KIGNN": ("./extensions/datasets.json", KG),
-    # Reviewer 1 comment 5b: separate the node-feature contribution from the
-    # knowledge-graph-edge contribution instead of changing both at once.
-    "KIGNN-PPI": ("./extensions/datasets.json", PPI),
-    "GNN-KG": ("./extensions/datasets_ll.json", KG),
+    # The three published configurations.
+    "GNN": ("./extensions/datasets_ll.json", PPI, "GeneNetwork"),
+    "CGNN": ("./extensions/datasets_hl.json", KG, "GeneNetwork"),
+    "KIGNN": ("./extensions/datasets.json", KG, "GeneNetwork"),
+    # R1.5b: separate the node-feature contribution from the knowledge-graph-edge
+    # contribution, instead of changing both at once as KIGNN vs GNN does.
+    # With GNN and KIGNN these complete a 2x2 over {features} x {graph}.
+    "KIGNN-PPI": ("./extensions/datasets.json", PPI, "GeneNetwork"),
+    "GNN-KG": ("./extensions/datasets_ll.json", KG, "GeneNetwork"),
+    # R1.5e: "GNN message passing versus a non-graph model using exactly the
+    # same node features". FCNN ignores the graph entirely; get_architecture()
+    # only auto-upgrades to RelationalGeneNetwork for "GeneNetwork", so this
+    # stays a plain MLP even with multiple adjacencies declared.
+    "KIMLP": ("./extensions/datasets.json", KG, "FCNN"),
 }
 
 CONFIG_TEMPLATE = """  name: {name}
@@ -92,6 +102,7 @@ CONFIG_TEMPLATE = """  name: {name}
     datasets: {datasets}
 
   model:
+    architecture: {architecture}
     mp:
        type: film
        n_layers: 2
@@ -218,7 +229,7 @@ def main():
             continue
         generated.append(disease)
         for variant in args.variants:
-            datasets, adjacency = VARIANTS[variant]
+            datasets, adjacency, architecture = VARIANTS[variant]
             for seed in range(1, args.seeds + 1):
                 name = "Rev_{}_{}_s{}".format(disease, variant, seed)
                 body = CONFIG_TEMPLATE.format(
@@ -228,6 +239,7 @@ def main():
                     seed=seed,
                     tag=GT_PREFIX + disease,
                     datasets=datasets,
+                    architecture=architecture,
                     adjacency=", ".join('"{}"'.format(a) for a in adjacency),
                     adjacency_field=", ".join('"name"' for _ in adjacency),
                 )

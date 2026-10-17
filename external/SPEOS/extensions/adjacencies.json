@@ -64,5 +64,38 @@
     "symbol": "hgnc",
     "weight": "None",
     "directed": false
+  },
+  {
+    "name": "kiml_bioplex_293t",
+    "type": "ppi",
+    "file_path": "./../../data/kiml_data/ppi/BioPlex_293T_Network_10K_Dec_2019.tsv",
+    "source": "SymbolA",
+    "target": "SymbolB",
+    "sep": "\t",
+    "symbol": "hgnc",
+    "weight": "None",
+    "directed": false
+  },
+  {
+    "name": "kiml_bioplex_hct116",
+    "type": "ppi",
+    "file_path": "./../../data/kiml_data/ppi/BioPlex_HCT116_Network_5.5K_Dec_2019.tsv",
+    "source": "SymbolA",
+    "target": "SymbolB",
+    "sep": "\t",
+    "symbol": "hgnc",
+    "weight": "None",
+    "directed": false
+  },
+  {
+    "name": "kiml_huri",
+    "type": "ppi",
+    "file_path": "./../../data/kiml_data/ppi/HuRI.tsv",
+    "source": "GeneA",
+    "target": "GeneB",
+    "sep": "\t",
+    "symbol": "ensembl",
+    "weight": "None",
+    "directed": false
   }
 ]
