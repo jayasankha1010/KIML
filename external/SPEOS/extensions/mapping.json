@@ -1,7 +1,7 @@
 [
   {
-    "name": "dee",
-    "ground_truth": "dee",
+    "name": "gt_dee",
+    "ground_truth": "gt_dee",
     "features_file": "",
     "function": "test_preprocess_labels",
     "args": [
@@ -10,8 +10,8 @@
     "kwargs": {}
   },
   {
-    "name": "ad_dee",
-    "ground_truth": "ad_dee",
+    "name": "gt_ad_dee",
+    "ground_truth": "gt_ad_dee",
     "features_file": "",
     "function": "test_preprocess_labels",
     "args": [
@@ -20,8 +20,8 @@
     "kwargs": {}
   },
   {
-    "name": "ar_dee",
-    "ground_truth": "ar_dee",
+    "name": "gt_ar_dee",
+    "ground_truth": "gt_ar_dee",
     "features_file": "",
     "function": "test_preprocess_labels",
     "args": [
@@ -30,8 +30,8 @@
     "kwargs": {}
   },
   {
-    "name": "microcephaly",
-    "ground_truth": "microcephaly",
+    "name": "gt_microcephaly",
+    "ground_truth": "gt_microcephaly",
     "features_file": "",
     "function": "test_preprocess_labels",
     "args": [
@@ -40,8 +40,8 @@
     "kwargs": {}
   },
   {
-    "name": "intellectual_disability",
-    "ground_truth": "intellectual_disability",
+    "name": "gt_intellectual_disability",
+    "ground_truth": "gt_intellectual_disability",
     "features_file": "",
     "function": "test_preprocess_labels",
     "args": [
@@ -50,8 +50,8 @@
     "kwargs": {}
   },
   {
-    "name": "mnd",
-    "ground_truth": "mnd",
+    "name": "gt_mnd",
+    "ground_truth": "gt_mnd",
     "features_file": "",
     "function": "test_preprocess_labels",
     "args": [
@@ -60,8 +60,8 @@
     "kwargs": {}
   },
   {
-    "name": "cp",
-    "ground_truth": "cp",
+    "name": "gt_cp",
+    "ground_truth": "gt_cp",
     "features_file": "",
     "function": "test_preprocess_labels",
     "args": [
@@ -70,8 +70,8 @@
     "kwargs": {}
   },
   {
-    "name": "platelet_disorder",
-    "ground_truth": "platelet_disorder",
+    "name": "gt_platelet_disorder",
+    "ground_truth": "gt_platelet_disorder",
     "features_file": "",
     "function": "test_preprocess_labels",
     "args": [
@@ -80,8 +80,8 @@
     "kwargs": {}
   },
   {
-    "name": "arthrogryposis",
-    "ground_truth": "arthrogryposis",
+    "name": "gt_arthrogryposis",
+    "ground_truth": "gt_arthrogryposis",
     "features_file": "",
     "function": "test_preprocess_labels",
     "args": [

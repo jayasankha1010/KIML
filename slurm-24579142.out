@@ -1,0 +1,273 @@
+========================================
+ KIML: Mantis Initialization & Execution
+========================================
+--> Loading standard HPC modules...
+Lmod has detected the following error: The following module(s) are unknown:
+"web_proxy"
+
+Please check the spelling or version number. Also try "module spider ..."
+It is also possible your cache file is out-of-date; it may help to try:
+  $ module --ignore_cache load "web_proxy"
+
+Also make sure that all modulefiles written in TCL start with the string
+#%Module
+
+
+
+
+--> Checking Conda dependencies...
+[Info] Conda environment 'mantis_kiml' already exists.
+--> Verifying legacy dependencies...
+----------------------------------------
+which python → /data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/bin/python
+python version → Python 3.7.16
+which nextflow → /data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/bin/nextflow
+nextflow version → nextflow version 21.10.6.5660
+----------------------------------------
+--> Executing Mantis Nextflow pipeline...
+Running: nextflow run main_dee_2022.nf
+----------------------------------------
+N E X T F L O W  ~  version 21.10.6
+Launching `main_dee_2022.nf` [backstabbing_shannon] - revision: a57e8946fe
+[-        ] process > runMantis -
+
+executor >  local (1)
+[59/08ab06] process > runMantis (1) [  0%] 0 of 1
+
+executor >  local (1)
+[59/08ab06] process > runMantis (1) [  0%] 0 of 1
+
+executor >  local (1)
+[59/08ab06] process > runMantis (1) [  0%] 0 of 1
+Error executing process > 'runMantis (1)'
+
+Caused by:
+  Process `runMantis (1)` terminated with an error exit status (1)
+
+Command executed:
+
+  # 1. Save Nextflow's hidden work directory so we can return here later
+  WORK_DIR=$(pwd)
+  
+  # 2. Navigate to the Mantis root folder so relative paths work perfectly
+  cd /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis
+  
+  # 3. Create output directory
+  mkdir -p Mantis_Out/dee_2022_dee_2022_pubmed_only_1_iter_custom
+  
+  # 4. Run Mantis (Notice we removed the base_dir prefixes here because we are already in the directory)
+  env python /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py         -n 38         -i 1         -m xgb         -o Mantis_Out/dee_2022_dee_2022_pubmed_only_1_iter_custom         -c mantis_ml/conf/dee_2022_config.yaml         -k Input_Files/dee_2022.tsv
+  
+  # 5. Return to Nextflow's work directory to drop the completion marker
+  cd $WORK_DIR
+  touch dee_2022_complete.txt
+
+Command exit status:
+  1
+
+Command output:
+  1     SCN2A         0.935168       99.994631         1.0
+  2     HERC1         0.932722       99.989262         0.0
+  3    STXBP1         0.931580       99.983893         1.0
+  4    ATP1A3         0.931578       99.978525         1.0
+  (18626, 4)
+  XGBoost
+  {'XGBoost': 0.9113971898643424}
+  XGBoost Average AUC: 0.9113971898643424
+  Saving results to all_clf.pkl
+  Non defined classifier: Instantiated only basic ClassifierEvaluator skeleton.
+  Reading all_clf.pkl
+  
+  XGBoost
+  
+  XGBoost
+  consensus_known_genes: 572
+  consensus_novel_genes: 2229
+  Non defined classifier: Instantiated only basic ClassifierEvaluator skeleton.
+  Completed reading of AllClassifiers.Merged.all_genes.predicted_proba.h5
+  known_genes_df:
+    Gene_Name  known_gene
+  0      AGRN         0.0
+  1     NOC2L         0.0
+  2   B3GALT6         0.0
+  3  C1orf159         0.0
+  4     ISG15         0.0
+  (18626, 2)
+  percentile_df:
+    Gene_Name  mantis_ml_proba  mantis_ml_perc
+  0    AFG3L2         0.944577      100.000000
+  1     SCN2A         0.935168       99.994631
+  2     HERC1         0.932722       99.989262
+  3    STXBP1         0.931580       99.983893
+  4    ATP1A3         0.931578       99.978525
+  (18626, 3)
+  Merged percentile_df:
+    Gene_Name  mantis_ml_proba  mantis_ml_perc  known_gene
+  0    AFG3L2         0.944577      100.000000         0.0
+  1     SCN2A         0.935168       99.994631         1.0
+  2     HERC1         0.932722       99.989262         0.0
+  3    STXBP1         0.931580       99.983893         1.0
+  4    ATP1A3         0.931578       99.978525         1.0
+  (18626, 4)
+  known_merged_clf_proba_df: (20, 572)
+  novel_merged_clf_proba_df: (20, 2229)
+  [Warning] 'get_definitive_gene_predictions_overlap' not applicable -- single classifier results provided
+  [Warning] 'get_definitive_gene_predictions_overlap' not applicable -- single classifier results provided
+  dict_keys(['XGBoost', 'AllClassifiers.Merged'])
+  Mantis_Out/dee_2022_dee_2022_pubmed_only_1_iter_custom/unsupervised-learning/UMAP.original_data.tsv
+  >> Running UMAP from original_data...
+
+Command error:
+  /data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/lib/python3.7/site-packages/sklearn/utils/validation.py:37: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    LARGE_SPARSE_SUPPORTED = LooseVersion(scipy_version) >= '0.14.0'
+  Using TensorFlow backend.
+  Traceback (most recent call last):
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 272, in <module>
+      main()
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 256, in main
+      mantis.run_all()
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 202, in run_all
+      self.run(**args_dict)
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 150, in run
+      dim_reduct_wrapper.run()
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/unsupervised_learn/dimens_reduction_wrapper.py", line 124, in run
+      self.run_umap()
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/unsupervised_learn/dimens_reduction_wrapper.py", line 104, in run_umap
+      X_umap, total_time = self.calc_umap(self.data, data_type=data_type)
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/unsupervised_learn/dimens_reduction.py", line 93, in calc_umap
+      X_umap = umap.fit_transform(X)
+    File "/data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/lib/python3.7/site-packages/umap/umap_.py", line 1572, in fit_transform
+      self.fit(X, y)
+    File "/data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/lib/python3.7/site-packages/umap/umap_.py", line 1325, in fit
+      X = check_array(X, dtype=np.float32, accept_sparse="csr")
+    File "/data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/lib/python3.7/site-packages/sklearn/utils/validation.py", line 573, in check_array
+      allow_nan=force_all_finite == 'allow-nan')
+    File "/data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/lib/python3.7/site-packages/sklearn/utils/validation.py", line 56, in _assert_all_finite
+      raise ValueError(msg_err.format(type_err, X.dtype))
+  ValueError: Input contains NaN, infinity or a value too large for dtype('float32').
+
+Work dir:
+  /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/work/59/08ab0696abfa53e9735eea5107b8ff
+
+Tip: when you have fixed the problem you can continue the execution adding the option `-resume` to the run command line
+
+
+
+executor >  local (1)
+[59/08ab06] process > runMantis (1) [100%] 1 of 1, failed: 1 ✘
+Error executing process > 'runMantis (1)'
+
+Caused by:
+  Process `runMantis (1)` terminated with an error exit status (1)
+
+Command executed:
+
+  # 1. Save Nextflow's hidden work directory so we can return here later
+  WORK_DIR=$(pwd)
+  
+  # 2. Navigate to the Mantis root folder so relative paths work perfectly
+  cd /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis
+  
+  # 3. Create output directory
+  mkdir -p Mantis_Out/dee_2022_dee_2022_pubmed_only_1_iter_custom
+  
+  # 4. Run Mantis (Notice we removed the base_dir prefixes here because we are already in the directory)
+  env python /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py         -n 38         -i 1         -m xgb         -o Mantis_Out/dee_2022_dee_2022_pubmed_only_1_iter_custom         -c mantis_ml/conf/dee_2022_config.yaml         -k Input_Files/dee_2022.tsv
+  
+  # 5. Return to Nextflow's work directory to drop the completion marker
+  cd $WORK_DIR
+  touch dee_2022_complete.txt
+
+Command exit status:
+  1
+
+Command output:
+  1     SCN2A         0.935168       99.994631         1.0
+  2     HERC1         0.932722       99.989262         0.0
+  3    STXBP1         0.931580       99.983893         1.0
+  4    ATP1A3         0.931578       99.978525         1.0
+  (18626, 4)
+  XGBoost
+  {'XGBoost': 0.9113971898643424}
+  XGBoost Average AUC: 0.9113971898643424
+  Saving results to all_clf.pkl
+  Non defined classifier: Instantiated only basic ClassifierEvaluator skeleton.
+  Reading all_clf.pkl
+  
+  XGBoost
+  
+  XGBoost
+  consensus_known_genes: 572
+  consensus_novel_genes: 2229
+  Non defined classifier: Instantiated only basic ClassifierEvaluator skeleton.
+  Completed reading of AllClassifiers.Merged.all_genes.predicted_proba.h5
+  known_genes_df:
+    Gene_Name  known_gene
+  0      AGRN         0.0
+  1     NOC2L         0.0
+  2   B3GALT6         0.0
+  3  C1orf159         0.0
+  4     ISG15         0.0
+  (18626, 2)
+  percentile_df:
+    Gene_Name  mantis_ml_proba  mantis_ml_perc
+  0    AFG3L2         0.944577      100.000000
+  1     SCN2A         0.935168       99.994631
+  2     HERC1         0.932722       99.989262
+  3    STXBP1         0.931580       99.983893
+  4    ATP1A3         0.931578       99.978525
+  (18626, 3)
+  Merged percentile_df:
+    Gene_Name  mantis_ml_proba  mantis_ml_perc  known_gene
+  0    AFG3L2         0.944577      100.000000         0.0
+  1     SCN2A         0.935168       99.994631         1.0
+  2     HERC1         0.932722       99.989262         0.0
+  3    STXBP1         0.931580       99.983893         1.0
+  4    ATP1A3         0.931578       99.978525         1.0
+  (18626, 4)
+  known_merged_clf_proba_df: (20, 572)
+  novel_merged_clf_proba_df: (20, 2229)
+  [Warning] 'get_definitive_gene_predictions_overlap' not applicable -- single classifier results provided
+  [Warning] 'get_definitive_gene_predictions_overlap' not applicable -- single classifier results provided
+  dict_keys(['XGBoost', 'AllClassifiers.Merged'])
+  Mantis_Out/dee_2022_dee_2022_pubmed_only_1_iter_custom/unsupervised-learning/UMAP.original_data.tsv
+  >> Running UMAP from original_data...
+
+Command error:
+  /data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/lib/python3.7/site-packages/sklearn/utils/validation.py:37: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    LARGE_SPARSE_SUPPORTED = LooseVersion(scipy_version) >= '0.14.0'
+  Using TensorFlow backend.
+  Traceback (most recent call last):
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 272, in <module>
+      main()
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 256, in main
+      mantis.run_all()
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 202, in run_all
+      self.run(**args_dict)
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 150, in run
+      dim_reduct_wrapper.run()
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/unsupervised_learn/dimens_reduction_wrapper.py", line 124, in run
+      self.run_umap()
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/unsupervised_learn/dimens_reduction_wrapper.py", line 104, in run_umap
+      X_umap, total_time = self.calc_umap(self.data, data_type=data_type)
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/unsupervised_learn/dimens_reduction.py", line 93, in calc_umap
+      X_umap = umap.fit_transform(X)
+    File "/data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/lib/python3.7/site-packages/umap/umap_.py", line 1572, in fit_transform
+      self.fit(X, y)
+    File "/data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/lib/python3.7/site-packages/umap/umap_.py", line 1325, in fit
+      X = check_array(X, dtype=np.float32, accept_sparse="csr")
+    File "/data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/lib/python3.7/site-packages/sklearn/utils/validation.py", line 573, in check_array
+      allow_nan=force_all_finite == 'allow-nan')
+    File "/data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/lib/python3.7/site-packages/sklearn/utils/validation.py", line 56, in _assert_all_finite
+      raise ValueError(msg_err.format(type_err, X.dtype))
+  ValueError: Input contains NaN, infinity or a value too large for dtype('float32').
+
+Work dir:
+  /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/work/59/08ab0696abfa53e9735eea5107b8ff
+
+Tip: when you have fixed the problem you can continue the execution adding the option `-resume` to the run command line
+
+
+
+----------------------------------------
+[Error] Mantis SLURM job encountered an error. Check the Nextflow logs.

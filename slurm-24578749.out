@@ -1,0 +1,250 @@
+========================================
+ KIML: Mantis Initialization & Execution
+========================================
+--> Loading standard HPC modules...
+Lmod has detected the following error: The following module(s) are unknown:
+"web_proxy"
+
+Please check the spelling or version number. Also try "module spider ..."
+It is also possible your cache file is out-of-date; it may help to try:
+  $ module --ignore_cache load "web_proxy"
+
+Also make sure that all modulefiles written in TCL start with the string
+#%Module
+
+
+
+
+--> Checking Conda dependencies...
+[Info] Conda environment 'mantis_kiml' already exists.
+--> Verifying legacy dependencies...
+--> Patching Jinja2: Downgrading v3.1.6 to v3.0.3 for Bokeh 1.1.0 compatibility...
+Collecting Jinja2<3.1.0
+  Downloading Jinja2-3.0.3-py3-none-any.whl (133 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 133.6/133.6 kB 22.1 MB/s eta 0:00:00
+Requirement already satisfied: MarkupSafe>=2.0 in /data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/lib/python3.7/site-packages (from Jinja2<3.1.0) (2.1.5)
+Installing collected packages: Jinja2
+  Attempting uninstall: Jinja2
+    Found existing installation: Jinja2 3.1.6
+    Uninstalling Jinja2-3.1.6:
+      Successfully uninstalled Jinja2-3.1.6
+Successfully installed Jinja2-3.0.3
+----------------------------------------
+which python → /data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/bin/python
+python version → Python 3.7.16
+which nextflow → /data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/bin/nextflow
+nextflow version → nextflow version 21.10.6.5660
+----------------------------------------
+--> Executing Mantis Nextflow pipeline...
+Running: nextflow run main_dee_2022.nf
+----------------------------------------
+N E X T F L O W  ~  version 21.10.6
+Launching `main_dee_2022.nf` [shrivelled_goldstine] - revision: 924d1fa386
+[-        ] process > runMantis [  0%] 0 of 1
+
+executor >  local (1)
+[bc/a5c275] process > runMantis (1) [  0%] 0 of 1
+
+executor >  local (1)
+[bc/a5c275] process > runMantis (1) [  0%] 0 of 1
+
+executor >  local (1)
+[bc/a5c275] process > runMantis (1) [  0%] 0 of 1
+Error executing process > 'runMantis (1)'
+
+Caused by:
+  Process `runMantis (1)` terminated with an error exit status (1)
+
+Command executed:
+
+  # Create output directory
+  mkdir -p /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/Mantis_Out/dee_2022_dee_2022_pubmed_only_1_iter_custom
+  
+  # Run Mantis
+  env python /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py         -n 38         -i 1         -m xgb         -o /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/Mantis_Out/dee_2022_dee_2022_pubmed_only_1_iter_custom         -c /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/conf/dee_2022_config.yaml         -k /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/Input_Files/dee_2022.tsv
+  
+  # Create completion marker
+  touch dee_2022_complete.txt
+
+Command exit status:
+  1
+
+Command output:
+  GO_AXON	401.0	2.15	
+  GO_MITOCHONDRIAL_MATRIX	401.0	2.15	
+  GO_MEMBRANE_LIPID_METABOLIC_PROCESS	401.0	2.15	
+  GO_LIPOSACCHARIDE_METABOLIC_PROCESS	401.0	2.15	
+  GO_MITOCHONDRIAL_PART	401.0	2.15	
+  GO_SYNAPSE	401.0	2.15	
+  GO_ORGANIC_ACID_METABOLIC_PROCESS	401.0	2.15	
+  GO_GATED_CHANNEL_ACTIVITY	401.0	2.15	
+  GO_GPI_ANCHOR_METABOLIC_PROCESS	401.0	2.15	
+  GO_ORGANONITROGEN_COMPOUND_METABOLIC_PROCESS	401.0	2.15	
+  GO_TRANSPORTER_COMPLEX	401.0	2.15	
+  Experimental_seed_genes_overlap	401.0	2.15	
+  Inferred_seed_genes_overlap	401.0	2.15	
+  GO_neurological	401.0	2.15	
+  GO_brain	401.0	2.15	
+  GO_SMALL_MOLECULE_METABOLIC_PROCESS	401.0	2.15	
+  GO_NEURON_PART	401.0	2.15	
+  GO_MITOCHONDRION	401.0	2.15	
+  GO_CARBOHYDRATE_DERIVATIVE_METABOLIC_PROCESS	401.0	2.15	
+  GO_SYNAPSE_PART	401.0	2.15	
+  GO_SINGLE_ORGANISM_BIOSYNTHETIC_PROCESS	401.0	2.15	
+  GO_NEURON_PROJECTION	401.0	2.15	
+  GO_MEMBRANE_PROTEIN_COMPLEX	401.0	2.15	
+  known_gene	401.0	2.15	
+  GnomAD_pNull	148.0	0.79	
+  GnomAD_oe_mis	148.0	0.79	
+  GnomAD_exp_lof	148.0	0.79	
+  GnomAD_obs_lof	148.0	0.79	
+  GnomAD_pRec	148.0	0.79	
+  GnomAD_oe_lof	148.0	0.79	
+  GnomAD_oe_lof_lower	148.0	0.79	
+  GnomAD_oe_lof_upper	148.0	0.79	
+  GnomAD_obs_mis	148.0	0.79	
+  GnomAD_exp_mis	148.0	0.79	
+  GnomAD_oe_mis_lower	148.0	0.79	
+  GnomAD_oe_mis_upper	148.0	0.79	
+  GnomAD_lof_z	148.0	0.79	
+  GnomAD_mis_z	148.0	0.79	
+  GnomAD_pLI	148.0	0.79	
+  
+  
+  >> Removing features with high ratio of missing data...
+  Dropped 0 features with more than 25.0% missing values
+  
+  
+  >> Imputing missing data...
+  Number of features with missing data: 0
+  All missing data have been successfully imputed.
+  [info] Core feature table saved at /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/Mantis_Out/dee_2022_dee_2022_pubmed_only_1_iter_custom/data/compiled_feature_tables/complete_feature_table.tsv
+  [mode] Combining core and external features.
+
+Command error:
+  /data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/lib/python3.7/site-packages/sklearn/utils/validation.py:37: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    LARGE_SPARSE_SUPPORTED = LooseVersion(scipy_version) >= '0.14.0'
+  Using TensorFlow backend.
+  Traceback (most recent call last):
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 272, in <module>
+      main()
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 256, in main
+      mantis.run_all()
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 202, in run_all
+      self.run(**args_dict)
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 96, in run
+      feat_compiler.run()
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/pre_processing/feature_table_compiler.py", line 364, in run
+      ext_df = load_external(pubmed_path, "pubmed")
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/pre_processing/feature_table_compiler.py", line 316, in load_external
+      raise FileNotFoundError(f"[error] {label} file not found: {ext_path}")
+  FileNotFoundError: [error] pubmed file not found: ../../data/kiml_data/pubmed_embeddings/pubmed_features_2022.tsv
+
+Work dir:
+  /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/work/bc/a5c27582d0c95521947d5631eabaff
+
+Tip: you can replicate the issue by changing to the process work dir and entering the command `bash .command.run`
+
+
+
+executor >  local (1)
+[bc/a5c275] process > runMantis (1) [100%] 1 of 1, failed: 1 ✘
+Error executing process > 'runMantis (1)'
+
+Caused by:
+  Process `runMantis (1)` terminated with an error exit status (1)
+
+Command executed:
+
+  # Create output directory
+  mkdir -p /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/Mantis_Out/dee_2022_dee_2022_pubmed_only_1_iter_custom
+  
+  # Run Mantis
+  env python /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py         -n 38         -i 1         -m xgb         -o /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/Mantis_Out/dee_2022_dee_2022_pubmed_only_1_iter_custom         -c /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/conf/dee_2022_config.yaml         -k /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/Input_Files/dee_2022.tsv
+  
+  # Create completion marker
+  touch dee_2022_complete.txt
+
+Command exit status:
+  1
+
+Command output:
+  GO_AXON	401.0	2.15	
+  GO_MITOCHONDRIAL_MATRIX	401.0	2.15	
+  GO_MEMBRANE_LIPID_METABOLIC_PROCESS	401.0	2.15	
+  GO_LIPOSACCHARIDE_METABOLIC_PROCESS	401.0	2.15	
+  GO_MITOCHONDRIAL_PART	401.0	2.15	
+  GO_SYNAPSE	401.0	2.15	
+  GO_ORGANIC_ACID_METABOLIC_PROCESS	401.0	2.15	
+  GO_GATED_CHANNEL_ACTIVITY	401.0	2.15	
+  GO_GPI_ANCHOR_METABOLIC_PROCESS	401.0	2.15	
+  GO_ORGANONITROGEN_COMPOUND_METABOLIC_PROCESS	401.0	2.15	
+  GO_TRANSPORTER_COMPLEX	401.0	2.15	
+  Experimental_seed_genes_overlap	401.0	2.15	
+  Inferred_seed_genes_overlap	401.0	2.15	
+  GO_neurological	401.0	2.15	
+  GO_brain	401.0	2.15	
+  GO_SMALL_MOLECULE_METABOLIC_PROCESS	401.0	2.15	
+  GO_NEURON_PART	401.0	2.15	
+  GO_MITOCHONDRION	401.0	2.15	
+  GO_CARBOHYDRATE_DERIVATIVE_METABOLIC_PROCESS	401.0	2.15	
+  GO_SYNAPSE_PART	401.0	2.15	
+  GO_SINGLE_ORGANISM_BIOSYNTHETIC_PROCESS	401.0	2.15	
+  GO_NEURON_PROJECTION	401.0	2.15	
+  GO_MEMBRANE_PROTEIN_COMPLEX	401.0	2.15	
+  known_gene	401.0	2.15	
+  GnomAD_pNull	148.0	0.79	
+  GnomAD_oe_mis	148.0	0.79	
+  GnomAD_exp_lof	148.0	0.79	
+  GnomAD_obs_lof	148.0	0.79	
+  GnomAD_pRec	148.0	0.79	
+  GnomAD_oe_lof	148.0	0.79	
+  GnomAD_oe_lof_lower	148.0	0.79	
+  GnomAD_oe_lof_upper	148.0	0.79	
+  GnomAD_obs_mis	148.0	0.79	
+  GnomAD_exp_mis	148.0	0.79	
+  GnomAD_oe_mis_lower	148.0	0.79	
+  GnomAD_oe_mis_upper	148.0	0.79	
+  GnomAD_lof_z	148.0	0.79	
+  GnomAD_mis_z	148.0	0.79	
+  GnomAD_pLI	148.0	0.79	
+  
+  
+  >> Removing features with high ratio of missing data...
+  Dropped 0 features with more than 25.0% missing values
+  
+  
+  >> Imputing missing data...
+  Number of features with missing data: 0
+  All missing data have been successfully imputed.
+  [info] Core feature table saved at /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/Mantis_Out/dee_2022_dee_2022_pubmed_only_1_iter_custom/data/compiled_feature_tables/complete_feature_table.tsv
+  [mode] Combining core and external features.
+
+Command error:
+  /data/gpfs/projects/punim2453/anaconda3/envs/mantis_kiml/lib/python3.7/site-packages/sklearn/utils/validation.py:37: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    LARGE_SPARSE_SUPPORTED = LooseVersion(scipy_version) >= '0.14.0'
+  Using TensorFlow backend.
+  Traceback (most recent call last):
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 272, in <module>
+      main()
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 256, in main
+      mantis.run_all()
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 202, in run_all
+      self.run(**args_dict)
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/main/__main__.py", line 96, in run
+      feat_compiler.run()
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/pre_processing/feature_table_compiler.py", line 364, in run
+      ext_df = load_external(pubmed_path, "pubmed")
+    File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/mantis_ml/modules/pre_processing/feature_table_compiler.py", line 316, in load_external
+      raise FileNotFoundError(f"[error] {label} file not found: {ext_path}")
+  FileNotFoundError: [error] pubmed file not found: ../../data/kiml_data/pubmed_embeddings/pubmed_features_2022.tsv
+
+Work dir:
+  /data/gpfs/projects/punim0512/chathura_projects/KIML/external/Mantis/work/bc/a5c27582d0c95521947d5631eabaff
+
+Tip: you can replicate the issue by changing to the process work dir and entering the command `bash .command.run`
+
+
+
+----------------------------------------
+[Error] Mantis SLURM job encountered an error. Check the Nextflow logs.

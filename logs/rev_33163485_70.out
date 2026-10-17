@@ -1,0 +1,13 @@
+========================================
+ KIML revision run
+   array task : 70
+   config     : Rev_dee_KIGNN_s1
+   disease    : dee
+   started    : Fri 16 Oct 2026 16:44:01 AEDT
+========================================
+--> Training: python -u outer_crossval.py -c configs/Rev_dee_KIGNN_s1.yaml
+---Init outer CV
+___init____ assign new adjacencies...
+----x---- self.adjacency_list---- :  [{'name': 'covaries', 'type': 'ppi', 'file_path': './../../data/kiml_data/networks/gene_gene_covaries.txt', 'source': 'source', 'target': 'target', 'sep': ' ', 'symbol': 'hgnc', 'weight': 'None', 'directed': False}, {'name': 'pathway', 'type': 'ppi', 'file_path': './../../data/kiml_data/networks/network_pathway.txt', 'source': 'source', 'target': 'target', 'sep': ' ', 'symbol': 'hgnc', 'weight': 'None', 'directed': False}]
+--> Training finished in 167s (exit 1)
+[Error] Training failed; skipping post-processing.

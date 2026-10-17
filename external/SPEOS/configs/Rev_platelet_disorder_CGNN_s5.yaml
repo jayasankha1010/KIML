@@ -5,7 +5,7 @@
   input:
     adjacency: ["pathway", "covaries"]
     adjacency_field: ["name", "name"]
-    tag: platelet_disorder
+    tag: gt_platelet_disorder
     use_expression: False
     datasets: ./extensions/datasets_hl.json
 

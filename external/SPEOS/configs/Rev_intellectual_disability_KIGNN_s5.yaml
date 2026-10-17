@@ -5,7 +5,7 @@
   input:
     adjacency: ["pathway", "covaries"]
     adjacency_field: ["name", "name"]
-    tag: intellectual_disability
+    tag: gt_intellectual_disability
     use_expression: False
     datasets: ./extensions/datasets.json
 

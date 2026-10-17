@@ -5,7 +5,7 @@
   input:
     adjacency: ["pathway", "covaries"]
     adjacency_field: ["name", "name"]
-    tag: cp
+    tag: gt_cp
     use_expression: False
     datasets: ./extensions/datasets_hl.json
 
