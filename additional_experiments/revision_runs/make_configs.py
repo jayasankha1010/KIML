@@ -46,6 +46,8 @@ import argparse
 import json
 import os
 
+GT_PREFIX = "gt_"
+
 # disease key -> (2022-09 ground-truth filename, human label)
 DISEASES = {
     "dee": ("DEE-2022_09.txt", "DEE"),
@@ -146,9 +148,13 @@ def build_mapping(disease_dir_rel, disease_dir_abs):
         if not os.path.exists(os.path.join(disease_dir_abs, gt_file)):
             print("  [skip] {}: {} not found".format(key, gt_file))
             continue
+        # Prefix the tag so no disease name is a SUBSTRING of another. The
+        # Mapper selects with `tag.lower() in mapping[field].lower()`, so a bare
+        # "dee" would also match "ad_dee" and "ar_dee" and silently pull in three
+        # ground truths, of which PreProcessor then uses whichever sorts first.
         mapping.append({
-            "name": key,
-            "ground_truth": key,
+            "name": GT_PREFIX + key,
+            "ground_truth": GT_PREFIX + key,
             "features_file": "",
             "function": "test_preprocess_labels",
             "args": [os.path.join(disease_dir_rel, gt_file)],
@@ -206,7 +212,7 @@ def main():
                     disease=disease,
                     variant=variant,
                     seed=seed,
-                    tag=disease,
+                    tag=GT_PREFIX + disease,
                     datasets=datasets,
                     adjacency=", ".join('"{}"'.format(a) for a in adjacency),
                     adjacency_field=", ".join('"name"' for _ in adjacency),

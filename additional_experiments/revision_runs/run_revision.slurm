@@ -37,7 +37,9 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=48G
 #SBATCH --time=0-08:00:00
-#SBATCH --output=logs/rev_%A_%a.out
+# .stdout rather than .out: the repo's .gitignore has a bare "*.out", so stdout
+# logs would be silently unshareable.
+#SBATCH --output=logs/rev_%A_%a.stdout
 #SBATCH --error=logs/rev_%A_%a.err
 #SBATCH --mail-user=culuwitikega@student.unimelb.edu.au
 #SBATCH --mail-type=FAIL,END
@@ -75,7 +77,10 @@ echo "========================================"
 
 module load Anaconda3/2022.10
 module load CUDA/12.2.0
-module load web_proxy
+# Not present on every Spartan partition, and only needed for outbound network
+# access, which these runs do not use. Tolerate its absence instead of spraying
+# an Lmod error over the log.
+module load web_proxy 2>/dev/null || echo "[info] web_proxy module unavailable; continuing"
 
 export PIP_CACHE_DIR=/data/gpfs/projects/punim0512/pip_cache
 export TMPDIR=/data/gpfs/projects/punim0512/pip_cache
