@@ -1,0 +1,41 @@
+Lmod has detected the following error: The following module(s) are unknown:
+"web_proxy"
+
+Please check the spelling or version number. Also try "module spider ..."
+It is also possible your cache file is out-of-date; it may help to try:
+  $ module --ignore_cache load "web_proxy"
+
+Also make sure that all modulefiles written in TCL start with the string
+#%Module
+
+
+
+Rev_dee_KIGNN_s1 2026-10-16 16:47:02,464 [INFO] speos.experiment (bootstrap): Starting run Rev_dee_KIGNN_s1
+Rev_dee_KIGNN_s1 2026-10-16 16:47:02,479 [INFO] speos.experiment (bootstrap): Cuda is available: False
+Rev_dee_KIGNN_s1 2026-10-16 16:47:02,479 [INFO] speos.experiment (bootstrap): CUDA set to auto, no CUDA device detected, setting to CPU
+Rev_dee_KIGNN_s1 2026-10-16 16:47:02,479 [INFO] speos.experiment (bootstrap): Using device(s): ['cpu']
+Traceback (most recent call last):
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/outer_crossval.py", line 11, in <module>
+    pipeline = OuterCVPipeline(args.config)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/pipeline.py", line 79, in __init__
+    self.crossval = OuterCVWrapper(self.config)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/wrappers.py", line 268, in __init__
+    self.inner_cv = CVWrapper(config, slave=True)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/wrappers.py", line 131, in __init__
+    self.base_experiment = Experiment(config, id="bootstrap")
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/experiment.py", line 42, in __init__
+    self.dataset = DatasetBootstrapper(holdout_size=config.input.holdout_size, name=self.name,
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/preprocessing/datasets.py", line 152, in __init__
+    self.dataset = MultiGeneDataset(name, config, holdout_size)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/preprocessing/datasets.py", line 121, in __init__
+    super().__init__(name, config, holdout_size, transform, pre_transform)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/preprocessing/datasets.py", line 21, in __init__
+    self.preprocessor = InputHandler(config).get_preprocessor()
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/preprocessing/handler.py", line 17, in __init__
+    self.prepro = PreProcessor(config, mappings, adjacencies)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/preprocessing/preprocessor.py", line 44, in __init__
+    self.assign_new_ground_truth(mapping_list, compile=False)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/preprocessing/preprocessor.py", line 534, in assign_new_ground_truth
+    raise ValueError("We can use only one ground truth as labels, but you used {}".format(set(ground_truth)))
+ValueError: We can use only one ground truth as labels, but you used {'ad_dee', 'ar_dee', 'dee'}
+Rev_dee_KIGNN_s1 2026-10-16 16:47:02,516 [INFO] speos.preprocessing.preprocessor: Using Adjacency matrices: ['covaries', 'pathway']

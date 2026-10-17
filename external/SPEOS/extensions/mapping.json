@@ -1,12 +1,92 @@
 [
-    {
-        "name": "dee_2022_09",
-        "ground_truth": "dee_2022_09",
-        "features_file": "",
-        "function": "test_preprocess_labels",
-        "args": [
-            "./../../data/kiml_data/diseases/DEE-2022_09.txt"
-        ],
-        "kwargs": {}
-    }
+  {
+    "name": "dee",
+    "ground_truth": "dee",
+    "features_file": "",
+    "function": "test_preprocess_labels",
+    "args": [
+      "./../../data/kiml_data/diseases/DEE-2022_09.txt"
+    ],
+    "kwargs": {}
+  },
+  {
+    "name": "ad_dee",
+    "ground_truth": "ad_dee",
+    "features_file": "",
+    "function": "test_preprocess_labels",
+    "args": [
+      "./../../data/kiml_data/diseases/AD_DEE-2022_09.txt"
+    ],
+    "kwargs": {}
+  },
+  {
+    "name": "ar_dee",
+    "ground_truth": "ar_dee",
+    "features_file": "",
+    "function": "test_preprocess_labels",
+    "args": [
+      "./../../data/kiml_data/diseases/AR_DEE-2022_09.txt"
+    ],
+    "kwargs": {}
+  },
+  {
+    "name": "microcephaly",
+    "ground_truth": "microcephaly",
+    "features_file": "",
+    "function": "test_preprocess_labels",
+    "args": [
+      "./../../data/kiml_data/diseases/Microcephaly-2022-09.txt"
+    ],
+    "kwargs": {}
+  },
+  {
+    "name": "intellectual_disability",
+    "ground_truth": "intellectual_disability",
+    "features_file": "",
+    "function": "test_preprocess_labels",
+    "args": [
+      "./../../data/kiml_data/diseases/Intellectual-disability-2022-09.txt"
+    ],
+    "kwargs": {}
+  },
+  {
+    "name": "mnd",
+    "ground_truth": "mnd",
+    "features_file": "",
+    "function": "test_preprocess_labels",
+    "args": [
+      "./../../data/kiml_data/diseases/MND-2022-09.txt"
+    ],
+    "kwargs": {}
+  },
+  {
+    "name": "cp",
+    "ground_truth": "cp",
+    "features_file": "",
+    "function": "test_preprocess_labels",
+    "args": [
+      "./../../data/kiml_data/diseases/CP-2022-09.txt"
+    ],
+    "kwargs": {}
+  },
+  {
+    "name": "platelet_disorder",
+    "ground_truth": "platelet_disorder",
+    "features_file": "",
+    "function": "test_preprocess_labels",
+    "args": [
+      "./../../data/kiml_data/diseases/Bleeding_and_Platelet_Disorders-2022-09.txt"
+    ],
+    "kwargs": {}
+  },
+  {
+    "name": "arthrogryposis",
+    "ground_truth": "arthrogryposis",
+    "features_file": "",
+    "function": "test_preprocess_labels",
+    "args": [
+      "./../../data/kiml_data/diseases/Arthrogryposis-2022-09.txt"
+    ],
+    "kwargs": {}
+  }
 ]
