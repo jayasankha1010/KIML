@@ -1,0 +1,49 @@
+Rev_dee_KIMLP_s1 2026-10-18 03:59:42,589 [INFO] speos.experiment (bootstrap): Starting run Rev_dee_KIMLP_s1
+Rev_dee_KIMLP_s1 2026-10-18 03:59:42,663 [INFO] speos.experiment (bootstrap): Cuda is available: True
+Rev_dee_KIMLP_s1 2026-10-18 03:59:42,676 [INFO] speos.experiment (bootstrap): Using device(s): ['cuda:0']
+Rev_dee_KIMLP_s1 2026-10-18 03:59:42,678 [INFO] speos.preprocessing.preprocessor: Using Adjacency matrices: ['covaries', 'pathway']
+Rev_dee_KIMLP_s1 2026-10-18 03:59:42,678 [INFO] speos.preprocessing.preprocessor: Using 1 mappings with ground truth gt_dee 
+Rev_dee_KIMLP_s1 2026-10-18 03:59:42,679 [INFO] speos.preprocessing.preprocessor: Using 1 additional node data sources: ['ChildExpression']
+Rev_dee_KIMLP_s1 2026-10-18 03:59:42,679 [INFO] speos.preprocessing.preprocessor: Using 2 additional node data sources: ['ChildExpression', 'PrebirthExpression']
+Rev_dee_KIMLP_s1 2026-10-18 03:59:42,679 [INFO] speos.preprocessing.preprocessor: Using 3 additional node data sources: ['ChildExpression', 'PrebirthExpression', 'PubmedEmbeddings2022']
+Processing...
+Done!
+Rev_dee_KIMLP_s1 2026-10-18 04:05:00,210 [INFO] speos.preprocessing.preprocessor: Number of positives in ground truth gt_dee: 736
+Rev_dee_KIMLP_s1 2026-10-18 04:05:00,728 [INFO] speos.preprocessing.datasets: Loading Processed Data from ./data/processed/Rev_dee_KIMLP_s1.pt
+/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/torch_geometric/data/in_memory_dataset.py:284: UserWarning: It is not recommended to directly access the internal storage format `data` of an 'InMemoryDataset'. If you are absolutely certain what you are doing, access the internal storage via `InMemoryDataset._data` instead to suppress this warning. Alternatively, you can access stacked individual attributes of every graph via `dataset.{attr_name}`.
+  warnings.warn(msg)
+Rev_dee_KIMLP_s1 2026-10-18 04:05:00,898 [INFO] speos.preprocessing.datasets: HeteroData(
+  x=[17282, 782],
+  y=[17282],
+  train_mask=[17282],
+  test_mask=[17282],
+  val_mask=[17282],
+  gene={ x=[17282, 782] },
+  (gene, covaries, gene)={ edge_index=[2, 82764] },
+  (gene, pathway, gene)={ edge_index=[2, 9130786] }
+)
+Traceback (most recent call last):
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/outer_crossval.py", line 11, in <module>
+    pipeline = OuterCVPipeline(args.config)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/pipeline.py", line 79, in __init__
+    self.crossval = OuterCVWrapper(self.config)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/wrappers.py", line 268, in __init__
+    self.inner_cv = CVWrapper(config, slave=True)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/wrappers.py", line 131, in __init__
+    self.base_experiment = Experiment(config, id="bootstrap")
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/experiment.py", line 53, in __init__
+    self.model = ModelBootstrapper(
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/models.py", line 525, in __init__
+    self.model = SimpleModel(config, dim, num_adjacencies)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/models.py", line 183, in __init__
+    super(SimpleModel, self).__init__(config, dim, num_adjacencies)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/models.py", line 18, in __init__
+    self.architectures = self._architectures
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/models.py", line 31, in _architectures
+    architectures = [self.get_architecture(self.config.model.architecture, self.dim) for _ in
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/models.py", line 31, in <listcomp>
+    architectures = [self.get_architecture(self.config.model.architecture, self.dim) for _ in
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/models.py", line 52, in get_architecture
+    return FCNN(self.config, dim)
+TypeError: FCNN.__init__() takes from 1 to 2 positional arguments but 3 were given
+Rev_dee_KIMLP_s1 2026-10-18 04:05:00,898 [INFO] speos.experiment (bootstrap): Cuda is available: True
