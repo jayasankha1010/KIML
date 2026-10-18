@@ -54,17 +54,47 @@ DISEASE_TARGETS = {
 }
 
 
+# Mantis writes a different schema to SPEOS, but carries the same three facts.
+# known_gene is a string flag rather than a 0/1 label; the values accepted here
+# match results/evaluate_mantis_single.py so the two agree on what "already
+# known" means.
+SPEOS_SCHEMA = ("hgnc", "truth", "avg_probability")
+MANTIS_SCHEMA = ("Gene_Name", "known_gene", "mantis_ml_proba")
+MANTIS_TRUE = {"1", "1.0", "true", "True", "TRUE"}
+
+
 def load_predictions(path):
-    """-> list of (gene, truth, probability), plus a gene -> probability map."""
+    """-> list of (gene, truth, probability), for either SPEOS or Mantis output."""
+    delimiter = "," if path.lower().endswith(".csv") else "\t"
     rows = []
     with open(path, newline="") as handle:
-        for row in csv.DictReader(handle, delimiter="\t"):
+        reader = csv.DictReader(handle, delimiter=delimiter)
+        fields = set(reader.fieldnames or [])
+        if set(SPEOS_SCHEMA) <= fields:
+            gene_key, truth_key, prob_key = SPEOS_SCHEMA
+            mantis = False
+        elif set(MANTIS_SCHEMA) <= fields:
+            gene_key, truth_key, prob_key = MANTIS_SCHEMA
+            mantis = True
+        else:
+            raise ValueError(
+                "{}: expected {} or {}, found {}".format(
+                    os.path.basename(path), SPEOS_SCHEMA, MANTIS_SCHEMA,
+                    sorted(fields)[:8]))
+        for row in reader:
             try:
-                probability = float(row["avg_probability"])
-                truth = float(row["truth"])
-            except (TypeError, ValueError, KeyError):
+                probability = float(row[prob_key])
+            except (TypeError, ValueError):
                 continue
-            rows.append((row["hgnc"], truth, probability))
+            raw = row[truth_key]
+            if mantis:
+                truth = 1.0 if str(raw).strip() in MANTIS_TRUE else 0.0
+            else:
+                try:
+                    truth = float(raw)
+                except (TypeError, ValueError):
+                    continue
+            rows.append((row[gene_key], truth, probability))
     return rows
 
 
@@ -220,12 +250,24 @@ def score_one(rows, targets, n_boot, seed):
     return point, bounds, target_ranks, universe
 
 
+# Each arm has the same three-way structure: experimental only, knowledge only,
+# and both combined. Late fusion is derived per arm from the two single-source
+# models, so R1.5d and R4.1 are answered for the RF arm as well as the GNN one.
+ARMS = {
+    "GNN": {"experimental": "GNN", "knowledge": "C-GNN",
+            "combined": "KI-GNN", "fusion": "Late-fusion-GNN"},
+    "RF": {"experimental": "RF", "knowledge": "C-RF",
+           "combined": "KI-RF", "fusion": "Late-fusion-RF"},
+}
+
 # Contrasts worth testing, as (A, B). Each asks "is A better than B?"
-CONTRASTS = [
-    ("KI-GNN", "GNN"),        # the manuscript's central claim
-    ("KI-GNN", "C-GNN"),      # does experimental data add to knowledge alone?
-    ("Late-fusion", "KI-GNN"),  # R1.5d: late fusion vs concatenation
-]
+CONTRASTS = []
+for _arm in ARMS.values():
+    CONTRASTS += [
+        (_arm["combined"], _arm["experimental"]),  # the manuscript's central claim
+        (_arm["combined"], _arm["knowledge"]),     # does experimental data add anything?
+        (_arm["fusion"], _arm["combined"]),        # R1.5d: late fusion vs concatenation
+    ]
 
 
 def main():
@@ -235,7 +277,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--predictions", default=os.path.join(here, "paper_predictions"))
-    parser.add_argument("--lookup", default=os.path.join(here, "experiment_lookup.tsv"))
+    parser.add_argument("--lookup", default=os.path.join(here, "experiment_lookup.tsv"),
+                        help="GNN-arm lookup: disease, variant, experiment id")
+    parser.add_argument("--mantis-lookup", default=os.path.join(here, "mantis_lookup.tsv"),
+                        help="RF-arm lookup: disease, variant, predictions CSV")
+    parser.add_argument("--mantis-predictions",
+                        default=os.path.join(here, "mantis_predictions"),
+                        help="directory holding the Mantis prediction CSVs")
     parser.add_argument("--disease-dir",
                         default=os.path.join(root, "data", "kiml_data", "diseases"))
     parser.add_argument("--n-boot", type=int, default=2000)
@@ -243,12 +291,25 @@ def main():
     parser.add_argument("-o", "--out", default=os.path.join(here, "revision_metrics.tsv"))
     args = parser.parse_args()
 
-    with open(args.lookup) as handle:
-        lookup = list(csv.DictReader(handle, delimiter="\t"))
-
+    # Two lookups, one per arm. Each maps disease -> variant -> (label, path).
     by_disease = {}
-    for entry in lookup:
-        by_disease.setdefault(entry["disease"], {})[entry["paper_variant"]] = entry["experiment_id"]
+
+    with open(args.lookup) as handle:
+        for entry in csv.DictReader(handle, delimiter="\t"):
+            experiment = entry["experiment_id"]
+            path = os.path.join(args.predictions,
+                                "{}_probabilities.tsv".format(experiment))
+            by_disease.setdefault(entry["disease"], {})[entry["paper_variant"]] = (
+                experiment, path)
+
+    if args.mantis_lookup and os.path.exists(args.mantis_lookup):
+        with open(args.mantis_lookup) as handle:
+            for entry in csv.DictReader(handle, delimiter="\t"):
+                path = os.path.join(args.mantis_predictions, entry["predictions_file"])
+                by_disease.setdefault(entry["disease"], {})[entry["paper_variant"]] = (
+                    entry["predictions_file"], path)
+    else:
+        print("[info] no Mantis lookup; scoring the GNN arm only.")
 
     results, contrasts = [], []
     print("{:24}{:12}{:>8}{:>10}  {}".format("disease", "method", "targets",
@@ -267,26 +328,31 @@ def main():
             targets = {line.strip() for line in handle if line.strip()}
 
         loaded = {}
-        for variant, experiment in variants.items():
-            path = os.path.join(args.predictions, "{}_probabilities.tsv".format(experiment))
+        for variant, (label, path) in variants.items():
             if os.path.exists(path):
-                loaded[variant] = load_predictions(path)
+                try:
+                    loaded[variant] = load_predictions(path)
+                except ValueError as error:
+                    print("  [skip] {} {}: {}".format(disease, variant, error))
             else:
-                print("  [missing] {} {} ({})".format(disease, variant, experiment))
+                print("  [missing] {} {} ({})".format(disease, variant, label))
 
-        # The three published configurations, plus the fusion of the two
-        # single-source models.
+        # The published configurations, plus a late fusion per arm built from
+        # that arm's two single-source models.
         to_score = dict(loaded)
-        if "GNN" in loaded and "C-GNN" in loaded:
-            fused, shared, n_a, n_b = late_fusion(loaded["GNN"], loaded["C-GNN"])
-            to_score["Late-fusion"] = fused
-            # Fusion lives on the intersection. If that differs from either
-            # model's universe, the fold-enrichment denominators differ too and
-            # the fusion row is not directly comparable with the others.
-            if shared != n_a or shared != n_b:
-                print("  [note] {}: fusion defined on {} genes; GNN has {}, "
-                      "C-GNN has {} - denominators differ".format(
-                          disease, shared, n_a, n_b))
+        for arm in ARMS.values():
+            if arm["experimental"] in loaded and arm["knowledge"] in loaded:
+                fused, shared, n_a, n_b = late_fusion(
+                    loaded[arm["experimental"]], loaded[arm["knowledge"]])
+                to_score[arm["fusion"]] = fused
+                # Fusion lives on the intersection. If that differs from either
+                # model's universe, the fold-enrichment denominators differ too
+                # and the fusion row is not directly comparable with the others.
+                if shared != n_a or shared != n_b:
+                    print("  [note] {}: {} defined on {} genes; {} has {}, "
+                          "{} has {} - denominators differ".format(
+                              disease, arm["fusion"], shared,
+                              arm["experimental"], n_a, arm["knowledge"], n_b))
 
         scored = {}
         for method, rows in to_score.items():
@@ -295,7 +361,7 @@ def main():
             scored[method] = (target_ranks, universe)
             n_targets = len(target_ranks)
             record = {"disease": disease, "method": method,
-                      "experiment": variants.get(method, "derived"),
+                      "experiment": variants.get(method, ("derived", ""))[0],
                       "n_targets": n_targets, "universe_size": universe,
                       "n_boot": args.n_boot}
             for key, value in point.items():
