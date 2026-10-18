@@ -51,6 +51,12 @@ class PostProcessor:
         self.init_pp_table()
         logger = setup_logger(*self.logger_args)
 
+        # Initialised here rather than inside the branch below: with an empty
+        # pp.tasks neither branch assigns it, and `return value` at the end of
+        # this method then raises UnboundLocalError after training has already
+        # completed successfully.
+        value = []
+
         # ensure overlap analysis is run first
         if "overlap_analysis" in self.config.pp.tasks:
             logger.info("Applying concensus strategy: {}".format(self.consensus))
