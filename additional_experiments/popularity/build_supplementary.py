@@ -239,6 +239,31 @@ def write_readme(ws, popularity, cutoff_applied):
         ("3. Where the manuscript sheets do not contain a configuration (GNN "
          "experimental-only for Bleeding and Platelet Disorder), the cell is left blank.", False),
         ("", False),
+        ("RF-ARM NUMBERS DIFFER FROM Supp_Data_2 BY DESIGN", True),
+        ("Every RF, C-RF and KI-RF figure here is computed on the POST-SPLIT target list "
+         "(*_vs_2022_09.txt), the definition the GNN arm uses. The published RF-arm values "
+         "used the FULL later-snapshot panel (e.g. DEE-2025_03.txt), which also contains "
+         "genes already on the panel at 2022-09 - 58 of them for DEE. Confirmed by "
+         "reproducing all 27 published values: 21 match only the full list, 6 match both "
+         "because their universe already excludes the extras, none match the diff alone.", False),
+        ("This is NOT leakage. Those genes carry Known Gene = 0, so Mantis never trained on "
+         "them and scoring them is legitimate validation. The issue is comparability: of the "
+         "58, only 7 exist in the GNN universe and all 7 are GNN TRAINING POSITIVES, excluded "
+         "from GNN ranking, while the other 51 are absent from it altogether. The same gene is "
+         "therefore a validation target for one arm and a training positive for the other, so "
+         "Table 1's RF and GNN columns do not measure the same task.", False),
+        ("It also matters for the temporal-split claim R1.7 challenges: a gene already on the "
+         "2022-09 panel cannot evidence discovery after the partition date. Scoring the RF arm "
+         "on the post-split diff is the conservative choice and strengthens that argument.", False),
+        ("The correction does not change the conclusion. On the consistent basis KI-RF still "
+         "beats RF on 7 of 9 diseases, exactly as published; only AD DEE flips, from +8 to -60 "
+         "ranks, and a margin of 8 was never meaningful. RF's own figures improve throughout "
+         "(DEE 2201 -> 1895, Intellectual Disability 2872 -> 2238, Platelet 250 -> 120).", False),
+        ("Related, and worth a Methods sentence: three different counts of 'DEE positives at "
+         "2022-09' are in play - 825 in DEE-2022_09.txt, 736 trained on by SPEOS after "
+         "feature-coverage filtering, and 726 flagged by Mantis under its own seed curation. "
+         "The arms train on overlapping but different positive sets.", False),
+        ("", False),
         ("DISCREPANCY WITH Supp_Data_2 'Summary' SHEET - PLEASE READ", True),
         ("The fold-enrichment values here are taken from the per-run detail sheets "
          "(Mantis_rank_metrics / speos_rank_metrics), not from the 'Summary' sheet of "
@@ -922,6 +947,261 @@ def write_late_fusion(ws, metric_rows, contrast_rows, diseases):
     ws.column_dimensions["I"].width = 16
 
 
+# The R1.5b 2x2: which half of KI-GNN does the work, the PubMed node features
+# or the knowledge-graph edges? Cell -> (features, graph, method name).
+# Uses the "(rerun)" variants so all four cells come from the same code path,
+# universe (16,546) and target count (192). The published GNN and KI-GNN runs
+# are reserved for Table 1 reproduction.
+ABLATION_GRID = [
+    ("expression only", "PPI graph", "GNN (rerun)"),
+    ("expression only", "knowledge graph", "GNN-KG"),
+    ("expression + PubMed", "PPI graph", "KIGNN-PPI"),
+    ("expression + PubMed", "knowledge graph", "KI-GNN (rerun)"),
+]
+ABLATION_ROWS = ["expression only", "expression + PubMed"]
+ABLATION_COLS = ["PPI graph", "knowledge graph"]
+
+# (contrast label as written by revision_analysis.py, what it isolates)
+ABLATION_CONTRAST_LABELS = [
+    ("KIGNN-PPI - GNN (rerun)", "add PubMed features (PPI graph held fixed)"),
+    ("KI-GNN (rerun) - GNN-KG", "add PubMed features (knowledge graph held fixed)"),
+    ("GNN-KG - GNN (rerun)", "swap to knowledge graph (expression only)"),
+    ("KI-GNN (rerun) - KIGNN-PPI", "swap to knowledge graph (both feature sets)"),
+    ("KIMLP - KI-GNN (rerun)", "remove message passing entirely (R1.5e)"),
+    ("GNN (rerun) - GNN", "reproduction check: same config, different run"),
+    ("KI-GNN (rerun) - KI-GNN", "reproduction check: same config, different run"),
+]
+
+ABLATION_METRICS = [
+    ("median_rank_unseen", "Median rank", 1, True),
+    ("fold_enrichment_top_1_pct", "Fold enrichment @1%", 2, False),
+    ("recall_at_100", "Recall @100", 4, False),
+    ("recall_at_1000", "Recall @1000", 4, False),
+]
+
+
+def write_ablations(ws, metric_rows, contrast_rows, disease="dee"):
+    """R1.5b and R1.5e. Fills in as runs land; absent cells stay blank."""
+    ws.cell(row=1, column=1,
+            value="Component ablations (Reviewer 1, comments 5b and 5e)").font = Font(bold=True, size=12)
+    note = ("R1.5b: \"ablations separating ... PubMed node features versus KG edges within "
+            "KI-GNN\". KI-GNN differs from GNN in two ways at once - it adds PubMed node "
+            "features AND swaps the baseline PPI graph for the knowledge graph - so the 2x2 "
+            "below holds one factor fixed while varying the other. R1.5e: \"GNN message "
+            "passing versus a non-graph model using exactly the same node features\"; KIMLP is "
+            "KI-GNN with mp.n_layers = 0, so message passing is removed while features, "
+            "pre/post-MP depth and width, training and folds are unchanged. "
+            "All runs are {} unless noted.".format(disease.upper()))
+    cell = ws.cell(row=2, column=1, value=note)
+    cell.font = Font(italic=True, size=9)
+    cell.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.row_dimensions[2].height = 75
+
+    by_method = {r["method"]: r for r in metric_rows if r["disease"] == disease}
+    by_contrast = {r["contrast"]: r for r in contrast_rows if r["disease"] == disease}
+
+    row = 4
+    for metric, label, digits, lower_better in ABLATION_METRICS:
+        ws.cell(row=row, column=1,
+                value="{}  ({} is better)".format(
+                    label, "lower" if lower_better else "higher")).font = Font(bold=True, size=11)
+        row += 1
+        ws.cell(row=row, column=1, value="")
+        for j, column_label in enumerate(ABLATION_COLS):
+            ws.cell(row=row, column=2 + j, value=column_label)
+        style_header(ws, row, 1 + len(ABLATION_COLS))
+        row += 1
+
+        present = []
+        for features in ABLATION_ROWS:
+            ws.cell(row=row, column=1, value=features).font = BOLD
+            for j, graph in enumerate(ABLATION_COLS):
+                method = next((m for f, g, m in ABLATION_GRID
+                               if f == features and g == graph), None)
+                record = by_method.get(method)
+                cell = ws.cell(row=row, column=2 + j)
+                if record is None:
+                    cell.value = "not yet run"
+                    cell.font = Font(size=9, italic=True, color="808080")
+                else:
+                    value = _number(record, metric, digits)
+                    lo = _number(record, metric + "_lo", digits)
+                    hi = _number(record, metric + "_hi", digits)
+                    text = "{:g}".format(value) if value is not None else ""
+                    if lo is not None and hi is not None:
+                        text += "  [{:g}, {:g}]".format(lo, hi)
+                    cell.value = text
+                    present.append((value, cell))
+                cell.alignment = Alignment(horizontal="center")
+                cell.border = BOX
+            row += 1
+
+        values = [v for v, _ in present if v is not None]
+        if values:
+            best = min(values) if lower_better else max(values)
+            for value, cell in present:
+                if value == best:
+                    cell.fill = BEST_FILL
+                    cell.font = BOLD
+        row += 1
+
+    # Paired contrasts: the actual test of each main effect.
+    ws.cell(row=row, column=1,
+            value="Paired contrasts - is the difference real?").font = Font(bold=True, size=11)
+    row += 1
+    ws.cell(row=row, column=1, value="Contrast")
+    ws.cell(row=row, column=2, value="Isolates")
+    for j, (_, label, _, _) in enumerate(ABLATION_METRICS):
+        ws.cell(row=row, column=3 + j, value=label)
+    style_header(ws, row, 2 + len(ABLATION_METRICS))
+    row += 1
+
+    for contrast, meaning in ABLATION_CONTRAST_LABELS:
+        record = by_contrast.get(contrast)
+        ws.cell(row=row, column=1, value=contrast).font = Font(size=9)
+        ws.cell(row=row, column=2, value=meaning).font = Font(size=9, italic=True)
+        for j, (metric, _, digits, lower_better) in enumerate(ABLATION_METRICS):
+            cell = ws.cell(row=row, column=3 + j)
+            if record is None:
+                cell.value = "not yet run"
+                cell.font = Font(size=9, italic=True, color="808080")
+            else:
+                difference = _number(record, metric, digits)
+                lo = _number(record, metric + "_lo", digits)
+                hi = _number(record, metric + "_hi", digits)
+                significant = record.get(metric + "_sig") == "yes"
+                text = "{:+g}".format(difference) if difference is not None else ""
+                if lo is not None and hi is not None:
+                    text += "  [{:+g}, {:+g}]".format(lo, hi)
+                cell.value = text
+                cell.font = Font(size=9, bold=significant)
+                if significant and difference is not None:
+                    favours_first = (difference < 0) if lower_better else (difference > 0)
+                    cell.fill = BEST_FILL if favours_first else PatternFill(
+                        "solid", fgColor="F8CBAD")
+            cell.alignment = Alignment(horizontal="center")
+            cell.border = BOX
+        row += 1
+
+    row += 1
+    for text in [
+        "Bold = 95% paired bootstrap interval excludes zero. Green favours the first model, "
+        "orange the second. Negative differences favour the first model for rank metrics.",
+        "All four grid cells come from the same code path, universe (16,546 genes) and "
+        "target set (192), so the comparison is internally consistent. Run-to-run variance "
+        "was measured directly by repeating the published configurations: GNN +87 and "
+        "KI-GNN -50 ranks, neither significant. Both reproduce the published values, and "
+        "the variance is smaller than the effects reported above.",
+    ]:
+        cell = ws.cell(row=row, column=1, value=text)
+        cell.font = Font(italic=True, size=9)
+        cell.alignment = Alignment(wrap_text=True, vertical="top")
+        ws.row_dimensions[row].height = 28
+        row += 1
+
+    ws.column_dimensions["A"].width = 24
+    ws.column_dimensions["B"].width = 42
+    for j in range(len(ABLATION_METRICS)):
+        ws.column_dimensions[get_column_letter(3 + j)].width = 26
+
+
+TABLE1_CONFIGS = ["RF", "C-RF", "KI-RF", "GNN", "C-GNN", "KI-GNN"]
+
+# Cells to leave at their published value, with the reason. ExpB96_mnd returns
+# 3936 against the published 8551 and has a different universe (17,216 vs
+# 17,282), so it is evidently a different run from the ExpCP_ that produced
+# Table 1 - whose fold files were never located. Substituting it here would
+# smuggle a change of experiment into a correction that is only about target
+# sets, so the published value stands until the provenance is resolved.
+TABLE1_HOLD = {
+    ("mnd", "GNN"): "provenance unresolved; ExpB96_mnd is a different run from the "
+                    "ExpCP_ behind the published value",
+}
+
+
+def write_corrected_table1(ws, metric_rows, published, diseases):
+    """Table 1 with every configuration scored on the post-split target list."""
+    ws.cell(row=1, column=1,
+            value="Corrected Table 1 - median rank, all configurations on the post-split target list").font = Font(bold=True, size=12)
+    note = ("Table 1's RF-arm values were computed against the full later-snapshot panel "
+            "(e.g. DEE-2025_03.txt) while the GNN arm used the post-split diff "
+            "(*_vs_2022_09.txt). The full panel also contains genes already present at "
+            "2022-09 - 58 of them for DEE - so the two arms were not measuring the same "
+            "task. This is not leakage: those genes carry Known Gene = 0 and were never "
+            "trained on. But a gene already on the panel cannot evidence discovery after "
+            "the partition date, so scoring every configuration on the post-split diff is "
+            "both the comparable and the conservative choice. "
+            "GNN columns are unchanged - they already used this basis. "
+            "KI-RF still beats RF on 7 of 9 diseases, exactly as published; only AD DEE "
+            "flips, from +8 to -60 ranks.")
+    cell = ws.cell(row=2, column=1, value=note)
+    cell.font = Font(italic=True, size=9)
+    cell.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.row_dimensions[2].height = 85
+
+    by_method = {(r["disease"], r["method"]): r for r in metric_rows}
+
+    row = 4
+    ws.cell(row=row, column=1, value="Disease")
+    for j, config in enumerate(TABLE1_CONFIGS):
+        ws.cell(row=row, column=2 + j * 2, value=config + " (published)")
+        ws.cell(row=row, column=3 + j * 2, value=config + " (corrected)")
+    style_header(ws, row, 1 + 2 * len(TABLE1_CONFIGS))
+    ws.freeze_panes = ws.cell(row=row + 1, column=2)
+    row += 1
+
+    changed = held = 0
+    for key, display, _ in diseases:
+        ws.cell(row=row, column=1, value=display).font = BOLD
+        for j, config in enumerate(TABLE1_CONFIGS):
+            old = published.get((key, config))
+            record = by_method.get((key, config))
+            new = _number(record, "median_rank_unseen", 1) if record else None
+
+            cell_old = ws.cell(row=row, column=2 + j * 2, value=old)
+            cell_new = ws.cell(row=row, column=3 + j * 2)
+            for cell in (cell_old, cell_new):
+                cell.number_format = "0.0"
+                cell.alignment = Alignment(horizontal="center")
+                cell.border = BOX
+
+            if (key, config) in TABLE1_HOLD:
+                cell_new.value = old
+                cell_new.fill = PatternFill("solid", fgColor="FFF2CC")
+                cell_new.comment = None
+                held += 1
+            elif new is None:
+                cell_new.value = None
+            else:
+                cell_new.value = new
+                if old is not None and abs(new - old) >= 0.5:
+                    cell_new.font = BOLD
+                    cell_new.fill = BEST_FILL if (new < old) else PatternFill(
+                        "solid", fgColor="F8CBAD")
+                    changed += 1
+        row += 1
+
+    row += 1
+    ws.cell(row=row, column=1,
+            value="{} cells change. Green = corrected value is better (lower rank), "
+                  "orange = worse. Amber = held at the published value.".format(changed)
+            ).font = Font(italic=True, size=9)
+    row += 1
+    for (disease, config), reason in TABLE1_HOLD.items():
+        label = next((d for k, d, _ in diseases if k == disease), disease)
+        cell = ws.cell(row=row, column=1,
+                       value="HELD: {} / {} kept at the published value - {}.".format(
+                           label, config, reason))
+        cell.font = Font(italic=True, size=9, color="C00000")
+        cell.alignment = Alignment(wrap_text=True, vertical="top")
+        ws.row_dimensions[row].height = 28
+        row += 1
+
+    ws.column_dimensions["A"].width = 30
+    for j in range(2 * len(TABLE1_CONFIGS)):
+        ws.column_dimensions[get_column_letter(2 + j)].width = 15
+
+
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     root = os.path.abspath(os.path.join(here, "..", ".."))
@@ -992,6 +1272,23 @@ def main():
     if metric_rows and contrast_rows:
         write_late_fusion(wb.create_sheet("Late fusion (R1.5d, R4.1)"),
                           metric_rows, contrast_rows, PAPER_DISEASES)
+        write_ablations(wb.create_sheet("Ablations (R1.5b, R1.5e)"),
+                        metric_rows, contrast_rows)
+
+    if metric_rows:
+        # Published medians, keyed (disease, config), from the two lookups.
+        published = {}
+        for lookup_path, variant_key in [
+                (os.path.join(revision, "mantis_lookup.tsv"), "paper_variant"),
+                (os.path.join(revision, "experiment_lookup.tsv"), "paper_variant")]:
+            for entry in load_tsv(lookup_path):
+                try:
+                    published[(entry["disease"], entry[variant_key])] = float(
+                        entry["table1_median"])
+                except (TypeError, ValueError, KeyError):
+                    continue
+        write_corrected_table1(wb.create_sheet("Corrected Table 1"),
+                               metric_rows, published, PAPER_DISEASES)
     if os.path.exists(args.counts):
         write_temporal_evidence(wb.create_sheet("Prior literature (R1.7)"),
                                 args.counts, args.disease_dir, all_diseases)

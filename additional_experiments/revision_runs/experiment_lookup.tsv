@@ -26,3 +26,8 @@ platelet_disorder	KI-GNN	104	104.0	ExpC92	hl_ll	results_processing/ExpC92_probab
 arthrogryposis	GNN	6299	6299.5	ExpD20	ll_only	results_processing/ExpD20_probabilities.tsv
 arthrogryposis	C-GNN	1252.5	1252.5	ExpC88	hl_only	results_processing/ExpC88_probabilities.tsv
 arthrogryposis	KI-GNN	1828.5	1828.5	ExpD21	hl_ll	results_processing/ExpD21_probabilities.tsv
+dee	GNN-KG			Rev_dee_GNN-KG_s1	ablation (new run)	paper_predictions/Rev_dee_GNN-KG_s1_probabilities.tsv
+dee	KIGNN-PPI			Rev_dee_KIGNN-PPI_s1	ablation (new run)	paper_predictions/Rev_dee_KIGNN-PPI_s1_probabilities.tsv
+dee	GNN (rerun)			Rev_dee_GNN_s1	ablation (new run)	paper_predictions/Rev_dee_GNN_s1_probabilities.tsv
+dee	KI-GNN (rerun)			Rev_dee_KIGNN_s1	ablation (new run)	paper_predictions/Rev_dee_KIGNN_s1_probabilities.tsv
+dee	KIMLP			Rev_dee_KIMLP_s1	ablation (new run)	paper_predictions/Rev_dee_KIMLP_s1_probabilities.tsv

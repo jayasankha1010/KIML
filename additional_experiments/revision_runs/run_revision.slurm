@@ -40,10 +40,11 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=128G
-# Measured on CPU: ~55 s/epoch, ~193 min/fold, 30 folds => ~96 h per config.
-# At the ~8x GPU speedup implied by prior experience (~24 min/fold) that is
-# ~12 h, so 24 h leaves headroom. Reduce if the partition caps walltime.
-#SBATCH --time=1-00:00:00
+# Measured on GPU: KIGNN-PPI 20 min, GNN-KG 87 min for a full 30-fold run (the
+# knowledge graph is the slower of the two). 4 h is ~3x the longest observed
+# run, and queues far faster than a day-long request. Raise it only if a
+# configuration with a substantially larger graph is added.
+#SBATCH --time=0-04:00:00
 # .stdout rather than .out: the repo's .gitignore has a bare "*.out", so stdout
 # logs would be silently unshareable.
 #SBATCH --output=logs/rev_%A_%a.stdout

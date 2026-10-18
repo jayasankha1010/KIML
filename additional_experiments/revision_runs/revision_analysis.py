@@ -58,8 +58,15 @@ DISEASE_TARGETS = {
 # known_gene is a string flag rather than a 0/1 label; the values accepted here
 # match results/evaluate_mantis_single.py so the two agree on what "already
 # known" means.
-SPEOS_SCHEMA = ("hgnc", "truth", "avg_probability")
-MANTIS_SCHEMA = ("Gene_Name", "known_gene", "mantis_ml_proba")
+# (gene, known-flag, score). Tried in order; the first whose columns are all
+# present wins. Mantis has been exported in two shapes - the raw merged
+# predictions that evaluate_mantis_single.py reads, and a human-readable export
+# with spaced column names - so both are accepted.
+SCHEMAS = [
+    ("speos", ("hgnc", "truth", "avg_probability")),
+    ("mantis", ("Gene_Name", "known_gene", "mantis_ml_proba")),
+    ("mantis", ("Gene Name", "Known Gene", "Mantis-ml Prediction Probability")),
+]
 MANTIS_TRUE = {"1", "1.0", "true", "True", "TRUE"}
 
 
@@ -70,17 +77,13 @@ def load_predictions(path):
     with open(path, newline="") as handle:
         reader = csv.DictReader(handle, delimiter=delimiter)
         fields = set(reader.fieldnames or [])
-        if set(SPEOS_SCHEMA) <= fields:
-            gene_key, truth_key, prob_key = SPEOS_SCHEMA
-            mantis = False
-        elif set(MANTIS_SCHEMA) <= fields:
-            gene_key, truth_key, prob_key = MANTIS_SCHEMA
-            mantis = True
-        else:
+        match = next(((kind, cols) for kind, cols in SCHEMAS if set(cols) <= fields), None)
+        if match is None:
             raise ValueError(
-                "{}: expected {} or {}, found {}".format(
-                    os.path.basename(path), SPEOS_SCHEMA, MANTIS_SCHEMA,
-                    sorted(fields)[:8]))
+                "{}: no known schema matches columns {}".format(
+                    os.path.basename(path), sorted(fields)[:8]))
+        kind, (gene_key, truth_key, prob_key) = match
+        mantis = kind == "mantis"
         for row in reader:
             try:
                 probability = float(row[prob_key])
@@ -260,6 +263,28 @@ ARMS = {
            "combined": "KI-RF", "fusion": "Late-fusion-RF"},
 }
 
+# R1.5b asks which half of KI-GNN does the work: the PubMed node features or
+# the knowledge-graph edges. KI-GNN vs GNN changes both at once, so these four
+# hold one factor fixed while varying the other, over the 2x2
+# {expression, expression+PubMed} x {PPI graph, knowledge graph}.
+# R1.5e asks what message passing itself contributes; KIMLP is KI-GNN with
+# mp.n_layers = 0, identical in every other respect.
+# All five cells come from the same code path and share a universe (16,546) and
+# target count (192), so the grid is internally consistent. The published GNN
+# and KI-GNN runs are kept separately for Table 1 reproduction; the "(rerun)"
+# variants are the ones used here. Run-to-run variance measured against the
+# published values is small - GNN +87, KI-GNN -50 ranks.
+ABLATION_CONTRASTS = [
+    ("KIGNN-PPI", "GNN (rerun)"),      # add PubMed features, PPI graph held fixed
+    ("KI-GNN (rerun)", "GNN-KG"),      # add PubMed features, knowledge graph held fixed
+    ("GNN-KG", "GNN (rerun)"),         # swap to knowledge graph, expression only
+    ("KI-GNN (rerun)", "KIGNN-PPI"),   # swap to knowledge graph, both feature sets
+    ("KIMLP", "KI-GNN (rerun)"),       # remove message passing entirely (R1.5e)
+    # Reproduction checks: same config, different run, no torch.manual_seed.
+    ("GNN (rerun)", "GNN"),
+    ("KI-GNN (rerun)", "KI-GNN"),
+]
+
 # Contrasts worth testing, as (A, B). Each asks "is A better than B?"
 CONTRASTS = []
 for _arm in ARMS.values():
@@ -268,6 +293,7 @@ for _arm in ARMS.values():
         (_arm["combined"], _arm["knowledge"]),     # does experimental data add anything?
         (_arm["fusion"], _arm["combined"]),        # R1.5d: late fusion vs concatenation
     ]
+CONTRASTS += ABLATION_CONTRASTS
 
 
 def main():

@@ -132,6 +132,15 @@ CONFIG_TEMPLATE = """  name: {name}
     save_dir: ./results/
     save_sorted: True
     save_tsv: True
+
+# These runs exist to produce per-gene rankings for the ablation tables; the
+# biological consistency analyses belong to the main results, not here. Leaving
+# the task list empty also avoids a hard failure: pathway, hpo_enrichment and
+# go_enrichment all import speos.postprocessing.goea, which imports
+# speos.postprocessing.lightgoea - an EMPTY, untracked directory in this repo,
+# so it never reaches a fresh clone and the import can never succeed.
+  pp:
+    tasks: []
 """
 
 
