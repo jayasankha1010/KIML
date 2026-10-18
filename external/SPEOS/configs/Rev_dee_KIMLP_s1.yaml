@@ -10,10 +10,10 @@
     datasets: ./extensions/datasets.json
 
   model:
-    architecture: FCNN
+    architecture: GeneNetwork
     mp:
        type: film
-       n_layers: 2
+       n_layers: 0
     pre_mp:
       dim: 50
       n_layers: 5

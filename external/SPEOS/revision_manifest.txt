@@ -1,3 +1,3 @@
-Rev_dee_GNN-KG_s1
+Rev_dee_GNN_s1
+Rev_dee_KIGNN_s1
 Rev_dee_KIMLP_s1
-Rev_dee_KIGNN-PPI_s1
