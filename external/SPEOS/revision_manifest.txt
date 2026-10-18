@@ -1,3 +1,2 @@
-Rev_dee_GNN_s1
-Rev_dee_KIGNN_s1
-Rev_dee_KIMLP_s1
+Rev_cp_KIGNN_s1
+Rev_cp_KIMLP_s1
