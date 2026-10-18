@@ -34,18 +34,29 @@ class PostProcessingTable:
                              " Use the add() method to add values new columns.".format(column_header, self.table.columns))
 
         RAISERROR = False
+        # Remember whether a set was passed before normalising it below: the
+        # guard at the end depends on it, and would never fire once index has
+        # been converted to a list.
+        index_is_set = isinstance(index, set)
         try:
             _ = iter(values)
-            if isinstance(index, set):
+            if index_is_set:
                 RAISERROR = True
         except TypeError:
             values = [values] * len(index)
+
+        # pandas >= 2.0 refuses a set as an indexer outright ("Passing a set as
+        # an indexer is not supported"), so it never reached the guard below.
+        # Sorting gives a deterministic order; the order only *matters* when
+        # values is itself an iterable, which still raises at the end.
+        if index_is_set:
+            index = sorted(index)
 
         self.table.loc[index, column_header] = values
         if remaining is not None:
             try:
                 _ = iter(remaining)
-                if isinstance(index, set):
+                if index_is_set:
                     RAISERROR = True
             except TypeError:
                 remaining = [remaining] * len(self.table.index.difference(index))

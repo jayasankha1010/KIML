@@ -75,20 +75,29 @@ PPI = ["kiml_bioplex_293t", "kiml_bioplex_hct116", "kiml_huri"]
 KG = ["pathway", "covaries"]
 VARIANTS = {
     # The three published configurations.
-    "GNN": ("./extensions/datasets_ll.json", PPI, "GeneNetwork"),
-    "CGNN": ("./extensions/datasets_hl.json", KG, "GeneNetwork"),
-    "KIGNN": ("./extensions/datasets.json", KG, "GeneNetwork"),
+    "GNN": ("./extensions/datasets_ll.json", PPI, "GeneNetwork", 2),
+    "CGNN": ("./extensions/datasets_hl.json", KG, "GeneNetwork", 2),
+    "KIGNN": ("./extensions/datasets.json", KG, "GeneNetwork", 2),
     # R1.5b: separate the node-feature contribution from the knowledge-graph-edge
     # contribution, instead of changing both at once as KIGNN vs GNN does.
     # With GNN and KIGNN these complete a 2x2 over {features} x {graph}.
-    "KIGNN-PPI": ("./extensions/datasets.json", PPI, "GeneNetwork"),
-    "GNN-KG": ("./extensions/datasets_ll.json", KG, "GeneNetwork"),
+    "KIGNN-PPI": ("./extensions/datasets.json", PPI, "GeneNetwork", 2),
+    "GNN-KG": ("./extensions/datasets_ll.json", KG, "GeneNetwork", 2),
     # R1.5e: "GNN message passing versus a non-graph model using exactly the
-    # same node features". FCNN ignores the graph entirely; get_architecture()
-    # only auto-upgrades to RelationalGeneNetwork for "GeneNetwork", so this
-    # stays a plain MLP even with multiple adjacencies declared.
-    "KIMLP": ("./extensions/datasets.json", KG, "FCNN"),
+    # same node features". Setting mp.n_layers to 0 leaves mp_list empty, so
+    # GeneNetwork sets self.mp = None and forward() reduces to pre_mp ->
+    # post_mp. Everything else - features, pre/post depth and width, training,
+    # folds - is identical to KIGNN, so the graph is the only variable.
+    #
+    # The shipped FCNN class is NOT usable for this: models.get_architecture
+    # calls FCNN(config, dim) while FCNN.__init__ takes only input_dim, and
+    # even once fixed it hardcodes 50 layers of width 70 against KIGNN's
+    # 5+2+5 of width 50 - which would confound depth and width with the graph.
+    "KIMLP": ("./extensions/datasets.json", KG, "GeneNetwork", 0),
 }
+
+# Every variant above except KIMLP uses the published 2 message-passing layers.
+DEFAULT_MP_LAYERS = 2
 
 CONFIG_TEMPLATE = """  name: {name}
 
@@ -105,7 +114,7 @@ CONFIG_TEMPLATE = """  name: {name}
     architecture: {architecture}
     mp:
        type: film
-       n_layers: 2
+       n_layers: {mp_layers}
     pre_mp:
       dim: 50
       n_layers: 5
@@ -229,7 +238,7 @@ def main():
             continue
         generated.append(disease)
         for variant in args.variants:
-            datasets, adjacency, architecture = VARIANTS[variant]
+            datasets, adjacency, architecture, mp_layers = VARIANTS[variant]
             for seed in range(1, args.seeds + 1):
                 name = "Rev_{}_{}_s{}".format(disease, variant, seed)
                 body = CONFIG_TEMPLATE.format(
@@ -240,6 +249,7 @@ def main():
                     tag=GT_PREFIX + disease,
                     datasets=datasets,
                     architecture=architecture,
+                    mp_layers=mp_layers,
                     adjacency=", ".join('"{}"'.format(a) for a in adjacency),
                     adjacency_field=", ".join('"name"' for _ in adjacency),
                 )
