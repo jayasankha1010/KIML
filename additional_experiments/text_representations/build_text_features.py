@@ -198,7 +198,35 @@ def report(findings):
     print("=" * 78)
 
 
-def build(path, method, dim, min_df, max_features, out_path, seed, scope="full"):
+def build_doc2vec(genes, documents, dim, seed, epochs, min_count):
+    """Paragraph vectors, the third representation R1.4 names.
+
+    Unlike TF-IDF this is a learned, dense embedding - so it sits between
+    bag-of-words and a pretrained transformer. Crucially it is trained ONLY on
+    the cutoff-restricted corpus, so like TF-IDF and unlike MiniLM it carries
+    no pretraining that could contain post-cutoff information.
+    """
+    from gensim.models.doc2vec import Doc2Vec, TaggedDocument
+
+    tagged = [TaggedDocument(words=doc.split(), tags=[i])
+              for i, doc in enumerate(documents)]
+    print("Training Doc2Vec: {} docs, {} dims, {} epochs".format(
+        len(tagged), dim, epochs))
+    model = Doc2Vec(vector_size=dim, min_count=min_count, workers=os.cpu_count() or 4,
+                    epochs=epochs, seed=seed,
+                    # Single worker + fixed seed is the only fully reproducible
+                    # setting in gensim; with several workers the ordering of
+                    # updates varies. Accepted here for speed, since the
+                    # comparison is directional rather than to-the-digit.
+                    dm=1)
+    model.build_vocab(tagged)
+    print("  vocabulary {}".format(len(model.wv)))
+    model.train(tagged, total_examples=model.corpus_count, epochs=model.epochs)
+    return [model.dv[i] for i in range(len(tagged))]
+
+
+def build(path, method, dim, min_df, max_features, out_path, seed, scope="full",
+          epochs=20, min_count=5):
     from sklearn.decomposition import TruncatedSVD
     from sklearn.feature_extraction.text import TfidfVectorizer
 
@@ -229,6 +257,16 @@ def build(path, method, dim, min_df, max_features, out_path, seed, scope="full")
     if empty:
         print("  [warn] {} genes have no text; they will get all-zero vectors "
               "and should be expected to rank poorly".format(empty))
+
+    if method == "doc2vec":
+        features = build_doc2vec(genes, documents, dim, seed, epochs, min_count)
+        print("Writing {}".format(out_path))
+        os.makedirs(os.path.dirname(os.path.abspath(out_path)) or ".", exist_ok=True)
+        with open(out_path, "w") as handle:
+            for gene, vector in zip(genes, features):
+                handle.write(gene + " " + " ".join("{:.6f}".format(v) for v in vector) + "\n")
+        print("  {} rows x {} dims".format(len(genes), len(features[0])))
+        return 0
 
     print("Fitting TF-IDF (min_df={}, max_features={})".format(min_df, max_features))
     vectorizer = TfidfVectorizer(min_df=min_df, max_features=max_features,
@@ -282,7 +320,10 @@ def main():
                         help="gene->text CSV. If omitted, both candidates are inspected.")
     parser.add_argument("--candidates", nargs="*", default=DEFAULT_CANDIDATES)
     parser.add_argument("--inspect-only", action="store_true")
-    parser.add_argument("--method", default="tfidf_svd", choices=["tfidf", "tfidf_svd"])
+    parser.add_argument("--method", default="tfidf_svd",
+                        choices=["tfidf", "tfidf_svd", "doc2vec"])
+    parser.add_argument("--epochs", type=int, default=20, help="doc2vec only")
+    parser.add_argument("--min-count", type=int, default=5, help="doc2vec only")
     parser.add_argument("--text-scope", default="full", choices=["full", "title"],
                         help="'full' uses title+abstract; 'title' keeps only the "
                              "title of each paper and requires the labelled file. "
@@ -308,7 +349,8 @@ def main():
         os.path.dirname(os.path.abspath(__file__)),
         "pubmed_{}_{}_{}d_2022_09.txt".format(args.method, args.text_scope, args.dim))
     return build(args.input, args.method, args.dim, args.min_df,
-                 args.max_features, out, args.seed, args.text_scope)
+                 args.max_features, out, args.seed, args.text_scope,
+                 args.epochs, args.min_count)
 
 
 if __name__ == "__main__":
