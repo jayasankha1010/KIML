@@ -61,8 +61,28 @@ DEFAULT_CANDIDATES = [
 MINILM_DIM = 384
 
 
-def read_gene_documents(path, limit=None):
-    """-> (gene, [per-paper text, ...]) pairs. One row per gene, ragged."""
+def split_title(text):
+    """From 'Title: X Abstract: Y' return X; from unlabelled text return it whole.
+
+    Only gene_paper_details_2022_09.csv carries the labels, which is what makes
+    a title-only arm possible at all - gene_details_2022_09.csv has them
+    stripped and the two fields cannot be separated again.
+    """
+    lowered = text.lower()
+    start = lowered.find("title:")
+    if start < 0:
+        return None  # unlabelled: cannot isolate the title
+    start += len("title:")
+    end = lowered.find("abstract:", start)
+    return text[start:end if end >= 0 else None].strip()
+
+
+def read_gene_documents(path, limit=None, scope="full"):
+    """-> (gene, [per-paper text, ...]) pairs. One row per gene, ragged.
+
+    scope="title" keeps only the title of each paper, which requires the
+    labelled file; papers without a recoverable title are dropped.
+    """
     csv.field_size_limit(min(sys.maxsize, 2 ** 31 - 1))
     with open(path, newline="", encoding="utf-8", errors="replace") as handle:
         reader = csv.reader(handle)
@@ -72,7 +92,10 @@ def read_gene_documents(path, limit=None):
                 return
             if not row:
                 continue
-            yield row[0].strip(), [cell for cell in row[1:] if cell.strip()]
+            cells = [cell for cell in row[1:] if cell.strip()]
+            if scope == "title":
+                cells = [t for t in (split_title(c) for c in cells) if t]
+            yield row[0].strip(), cells
 
 
 def inspect(path, sample=400):
@@ -142,7 +165,28 @@ def report(findings):
     print("   thinner     : {}".format(os.path.basename(thinner["path"])))
     print("                 median {:g} words per paper".format(
         thinner["median_words_per_paper"]))
-    if ratio > 3:
+    # Two files can hold the same text and differ only by field labels. A
+    # near-identical word count plus "Title:"/"Abstract:" prefixes in one of
+    # them means exactly that, and reporting a 1.01x ratio as "similar, check
+    # manually" is useless.
+    def labelled(f):
+        return any(t.lstrip().lower().startswith("title:") or "abstract:" in t.lower()
+                   for _, t in f["examples"])
+
+    if ratio < 1.2 and labelled(fuller) != labelled(thinner):
+        with_labels = fuller if labelled(fuller) else thinner
+        without = thinner if labelled(fuller) else fuller
+        print("\n   SAME TEXT, different formatting. {} carries literal".format(
+            os.path.basename(with_labels["path"])))
+        print("   'Title:' / 'Abstract:' prefixes; {} has them".format(
+            os.path.basename(without["path"])))
+        print("   stripped. The word-count gap is just those tokens.")
+        print("\n   Use {} - it is the file".format(os.path.basename(without["path"])))
+        print("   generate_pubmed_embeddings.py reads, so the MiniLM embeddings were")
+        print("   built from exactly this text and the comparison isolates the encoder.")
+        print("   (The labels would in any case be neutralised by TF-IDF: a term in")
+        print("   every document has zero inverse document frequency.)")
+    elif ratio > 3:
         print("\n   A {:.0f}x difference is consistent with titles+abstracts versus".format(ratio))
         print("   titles only. Build from the FULLER file: the MiniLM embeddings")
         print("   were built from abstracts, and comparing a titles-only TF-IDF")
@@ -154,13 +198,27 @@ def report(findings):
     print("=" * 78)
 
 
-def build(path, method, dim, min_df, max_features, out_path, seed):
+def build(path, method, dim, min_df, max_features, out_path, seed, scope="full"):
     from sklearn.decomposition import TruncatedSVD
     from sklearn.feature_extraction.text import TfidfVectorizer
 
     print("Reading {}".format(path))
+    if scope == "title":
+        # Probe WITH the scope applied, over enough genes that a few legitimately
+        # title-less papers do not look like a wrong-file error.
+        probe = list(read_gene_documents(path, limit=50, scope=scope))
+        if not any(docs for _, docs in probe):
+            print("[error] --text-scope title needs the labelled file, the one whose")
+            print("        entries look like 'Title: ... Abstract: ...'. No titles were")
+            print("        recoverable from the first {} genes of this file.".format(
+                len(probe)))
+            print("        Use gene_paper_details_2022_09.csv.")
+            return 1
+    print("  text scope: {}".format(
+        "title only" if scope == "title" else "title + abstract"))
+
     genes, documents = [], []
-    for gene, docs in read_gene_documents(path):
+    for gene, docs in read_gene_documents(path, scope=scope):
         genes.append(gene)
         # One document per gene: all of its papers concatenated, matching how
         # the MiniLM embeddings average over a gene's papers.
@@ -225,6 +283,11 @@ def main():
     parser.add_argument("--candidates", nargs="*", default=DEFAULT_CANDIDATES)
     parser.add_argument("--inspect-only", action="store_true")
     parser.add_argument("--method", default="tfidf_svd", choices=["tfidf", "tfidf_svd"])
+    parser.add_argument("--text-scope", default="full", choices=["full", "title"],
+                        help="'full' uses title+abstract; 'title' keeps only the "
+                             "title of each paper and requires the labelled file. "
+                             "Running both separates what abstracts contribute "
+                             "from what titles alone already carry.")
     parser.add_argument("--dim", type=int, default=MINILM_DIM,
                         help="output width; defaults to MiniLM's {} so the "
                              "comparison isolates the encoder".format(MINILM_DIM))
@@ -243,9 +306,9 @@ def main():
 
     out = args.out or os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        "pubmed_{}_{}d_2022_09.txt".format(args.method, args.dim))
+        "pubmed_{}_{}_{}d_2022_09.txt".format(args.method, args.text_scope, args.dim))
     return build(args.input, args.method, args.dim, args.min_df,
-                 args.max_features, out, args.seed)
+                 args.max_features, out, args.seed, args.text_scope)
 
 
 if __name__ == "__main__":
