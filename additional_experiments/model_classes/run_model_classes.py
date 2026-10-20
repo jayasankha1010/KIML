@@ -65,6 +65,19 @@ EXPRESSION = [os.path.join(DATA, "ahbd", "child_expression.txt"),
 PUBMED = [os.path.join(DATA, "pubmed_embeddings",
                        "pubmed_embeddings_rearranged_2022_09.txt")]
 
+# disease -> (2022-09 positives, post-split targets). Same files the GNN arm uses.
+DISEASES = {
+    "dee": ("DEE-2022_09.txt", "DEE-2025_03_vs_2022_09.txt"),
+    "cp": ("CP-2022-09.txt", "CP-2025_06_vs_2022_09.txt"),
+    "intellectual_disability": ("Intellectual-disability-2022-09.txt",
+                                "Intellectual-disability-2025_06_vs_2022_09.txt"),
+    "microcephaly": ("Microcephaly-2022-09.txt", "Microcephaly-2025_06_vs_2022_09.txt"),
+    "arthrogryposis": ("Arthrogryposis-2022-09.txt", "Arthrogryposis-2025_06_vs_2022_09.txt"),
+    "platelet_disorder": ("Bleeding_and_Platelet_Disorders-2022-09.txt",
+                          "Bleeding_and_Platelet_Disorders-2026-02_vs_2022-09.txt"),
+    "mnd": ("MND-2022-09.txt", "MND-2025_06_vs_2022_09.txt"),
+}
+
 FEATURE_SETS = {
     "LL (expression)": EXPRESSION,
     "HL (PubMed)": PUBMED,
@@ -72,8 +85,25 @@ FEATURE_SETS = {
 }
 
 
+def boosting_model(seed):
+    """XGBoost if installed, else sklearn's equivalent histogram booster.
+
+    R1.3 names XGBoost specifically, so use it when available and say so in the
+    output; HistGradientBoostingClassifier is the same algorithm family and
+    keeps the experiment runnable without an extra dependency.
+    """
+    try:
+        from xgboost import XGBClassifier
+        return "XGBoost", XGBClassifier(
+            n_estimators=300, eval_metric="logloss", random_state=seed, n_jobs=-1)
+    except ImportError:
+        return ("Gradient boosting",
+                HistGradientBoostingClassifier(random_state=seed))
+
+
 def models(seed):
     """Plain, untuned classifiers. Defaults except for class balancing."""
+    boosting_name, boosting = boosting_model(seed)
     return {
         "Logistic regression": make_pipeline(
             StandardScaler(),
@@ -82,10 +112,7 @@ def models(seed):
         "Random forest": RandomForestClassifier(
             n_estimators=300, class_weight="balanced", n_jobs=-1,
             random_state=seed),
-        # Stands in for XGBoost, which the reviewer named; same gradient-boosted
-        # trees, available in sklearn without an extra dependency.
-        "Gradient boosting": HistGradientBoostingClassifier(
-            random_state=seed),
+        boosting_name: boosting,
         "MLP": make_pipeline(
             StandardScaler(),
             MLPClassifier(hidden_layer_sizes=(50, 50), max_iter=400,
@@ -139,11 +166,8 @@ def out_of_fold_scores(X, is_positive, model_factory, n_folds, seed):
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--disease", default="dee")
-    parser.add_argument("--positives",
-                        default=os.path.join(DATA, "diseases", "DEE-2022_09.txt"))
-    parser.add_argument("--targets",
-                        default=os.path.join(DATA, "diseases", "DEE-2025_03_vs_2022_09.txt"))
+    parser.add_argument("--diseases", nargs="*", default=["dee"],
+                        help="subset of {}".format(sorted(DISEASES)))
     parser.add_argument("--folds", type=int, default=5)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--n-boot", type=int, default=2000)
@@ -151,47 +175,50 @@ def main():
                         default=os.path.join(HERE, "model_class_metrics.tsv"))
     args = parser.parse_args()
 
-    positives = read_genes(args.positives)
-    targets = read_genes(args.targets)
-
     results = []
-    print("{:22}{:18}{:>8}{:>10}  {}".format(
-        "model", "features", "targets", "median", "95% CI"))
-    print("-" * 74)
+    print("{:24}{:22}{:18}{:>8}{:>10}  {}".format(
+        "disease", "model", "features", "targets", "median", "95% CI"))
+    print("-" * 98)
 
-    for feature_name, paths in FEATURE_SETS.items():
-        genes, X = load_matrix(paths)
-        index = {g: i for i, g in enumerate(genes)}
-        is_positive = np.array([g in positives for g in genes])
+    # Features are disease-independent, so load each matrix once.
+    loaded = {name: load_matrix(paths) for name, paths in FEATURE_SETS.items()}
 
-        for model_name, model in models(args.seed).items():
-            factory = (lambda m=model: __import__("sklearn").base.clone(m))
-            scores, unlabelled_idx = out_of_fold_scores(
-                X, is_positive, factory, args.folds, args.seed)
+    for disease in args.diseases:
+        pos_file, tgt_file = DISEASES[disease]
+        positives = read_genes(os.path.join(DATA, "diseases", pos_file))
+        targets = read_genes(os.path.join(DATA, "diseases", tgt_file))
 
-            # Rank unlabelled genes by score, highest first - same convention
-            # as evaluate_results.py.
-            order = unlabelled_idx[np.argsort(-scores[unlabelled_idx], kind="stable")]
-            rank_of = {genes[idx]: i + 1 for i, idx in enumerate(order)}
-            hit_ranks = [rank_of[g] for g in sorted(targets) if g in rank_of]
+        for feature_name, (genes, X) in loaded.items():
+            is_positive = np.array([g in positives for g in genes])
 
-            point, bounds = bootstrap(hit_ranks, len(order), args.n_boot, args.seed)
-            record = {"disease": args.disease, "model": model_name,
-                      "features": feature_name, "n_targets": len(hit_ranks),
-                      "universe_size": len(order), "n_folds": args.folds,
-                      "n_boot": args.n_boot}
-            for key, value in point.items():
-                record[key] = round(value, 4)
-                if key in bounds:
-                    record[key + "_lo"] = round(bounds[key][0], 4)
-                    record[key + "_hi"] = round(bounds[key][1], 4)
-            results.append(record)
+            for model_name, model in models(args.seed).items():
+                factory = (lambda m=model: __import__("sklearn").base.clone(m))
+                scores, unlabelled_idx = out_of_fold_scores(
+                    X, is_positive, factory, args.folds, args.seed)
 
-            ci = bounds.get("median_rank_unseen")
-            print("{:22}{:18}{:>8}{:>10}  {}".format(
-                model_name, feature_name, len(hit_ranks),
-                "{:g}".format(point["median_rank_unseen"]),
-                "[{:g}, {:g}]".format(*ci) if ci else "-"))
+                # Rank unlabelled genes by score, highest first - same convention
+                # as evaluate_results.py.
+                order = unlabelled_idx[np.argsort(-scores[unlabelled_idx], kind="stable")]
+                rank_of = {genes[idx]: i + 1 for i, idx in enumerate(order)}
+                hit_ranks = [rank_of[g] for g in sorted(targets) if g in rank_of]
+
+                point, bounds = bootstrap(hit_ranks, len(order), args.n_boot, args.seed)
+                record = {"disease": disease, "model": model_name,
+                          "features": feature_name, "n_targets": len(hit_ranks),
+                          "universe_size": len(order), "n_folds": args.folds,
+                          "n_boot": args.n_boot}
+                for key, value in point.items():
+                    record[key] = round(value, 4)
+                    if key in bounds:
+                        record[key + "_lo"] = round(bounds[key][0], 4)
+                        record[key + "_hi"] = round(bounds[key][1], 4)
+                results.append(record)
+
+                ci = bounds.get("median_rank_unseen")
+                print("{:24}{:22}{:18}{:>8}{:>10}  {}".format(
+                    disease, model_name, feature_name, len(hit_ranks),
+                    "{:g}".format(point["median_rank_unseen"]),
+                    "[{:g}, {:g}]".format(*ci) if ci else "-"))
 
     columns = list(results[0])
     for record in results:

@@ -980,7 +980,7 @@ ABLATION_METRICS = [
 ]
 
 
-def write_ablations(ws, metric_rows, contrast_rows, disease="dee"):
+def write_ablations(ws, metric_rows, contrast_rows, diseases, disease="dee"):
     """R1.5b and R1.5e. Fills in as runs land; absent cells stay blank."""
     ws.cell(row=1, column=1,
             value="Component ablations (Reviewer 1, comments 5b and 5e)").font = Font(bold=True, size=12)
@@ -1083,8 +1083,50 @@ def write_ablations(ws, metric_rows, contrast_rows, disease="dee"):
             cell.border = BOX
         row += 1
 
+    # R1.5e across every disease where the no-message-passing run exists.
+    row += 1
+    ws.cell(row=row, column=1,
+            value="R1.5e across diseases - what does message passing contribute?").font = Font(bold=True, size=11)
+    row += 1
+    for j, text in enumerate(["Disease", "n targets", "KIMLP - KI-GNN (median rank)",
+                              "95% CI", "Significant", "Reading"]):
+        ws.cell(row=row, column=1 + j, value=text)
+    style_header(ws, row, 6)
+    row += 1
+    for key, display, _ in diseases:
+        record = next((r for r in contrast_rows
+                       if r["disease"] == key
+                       and r["contrast"] == "KIMLP - KI-GNN (rerun)"), None)
+        if not record:
+            continue
+        difference = _number(record, "median_rank_unseen", 1)
+        lo = _number(record, "median_rank_unseen_lo", 1)
+        hi = _number(record, "median_rank_unseen_hi", 1)
+        significant = record.get("median_rank_unseen_sig") == "yes"
+        ws.cell(row=row, column=1, value=display).font = BOLD
+        ws.cell(row=row, column=2, value=_number(record, "n_paired_targets", 0))
+        ws.cell(row=row, column=3, value="{:+g}".format(difference))
+        ws.cell(row=row, column=4, value="[{:+g}, {:+g}]".format(lo, hi))
+        ws.cell(row=row, column=5, value="yes" if significant else "no")
+        ws.cell(row=row, column=6,
+                value="message passing helps" if significant
+                      else "not detectable at this n")
+        for col in range(1, 7):
+            cell = ws.cell(row=row, column=col)
+            cell.border = BOX
+            if col > 1:
+                cell.alignment = Alignment(horizontal="center")
+            if significant:
+                cell.font = BOLD
+        row += 1
+
     row += 1
     for text in [
+        "Positive differences mean the no-message-passing model ranks targets WORSE, i.e. "
+        "message passing helps. The direction is the same on both diseases; only the "
+        "magnitude and the power differ. The claim to make is therefore that message "
+        "passing contributes significantly on Cerebral Palsy and is not detectable on DEE "
+        "at n = 192 - not that it contributes nothing.",
         "Bold = 95% paired bootstrap interval excludes zero. Green favours the first model, "
         "orange the second. Negative differences favour the first model for rank metrics.",
         "All four grid cells come from the same code path, universe (16,546 genes) and "
@@ -1103,6 +1145,110 @@ def write_ablations(ws, metric_rows, contrast_rows, disease="dee"):
     ws.column_dimensions["B"].width = 42
     for j in range(len(ABLATION_METRICS)):
         ws.column_dimensions[get_column_letter(3 + j)].width = 26
+
+
+MODEL_CLASS_ORDER = ["Logistic regression", "Random forest", "Gradient boosting", "MLP"]
+MODEL_CLASS_FEATURES = ["LL (expression)", "HL (PubMed)", "LL+HL (KIML)"]
+
+
+def write_model_classes(ws, rows, diseases):
+    """R1.3: is the knowledge benefit specific to RF and the GNN?"""
+    ws.cell(row=1, column=1,
+            value="Knowledge inclusion across model classes (Reviewer 1, comment 3)").font = Font(bold=True, size=12)
+    note = ("R1.3: \"The framework is claimed to be general, but experimentally, it is highly "
+            "selective towards RF and one GNN implementation ... I am not suggesting that the "
+            "authors test all of these, but merely highlighting that the choice made by them "
+            "needs to be defended well enough.\"  The question is therefore narrow: is the "
+            "reported benefit a property of the knowledge features, or an artefact of the two "
+            "model classes chosen? These runs use the manuscript's own feature files - the same "
+            "cortical expression and PubMed embedding matrices the GNN consumes - and the same "
+            "positive and target gene lists, passed through four deliberately untuned "
+            "classifiers. Tuning is avoided on purpose: the claim under test is directional, and "
+            "tuning would invite the benchmark comparison the reviewer said was unnecessary. "
+            "Gradient boosting stands in for the XGBoost he named. Unlabelled genes are scored "
+            "out of fold, so no gene is ranked by a model that used it as a negative.")
+    cell = ws.cell(row=2, column=1, value=note)
+    cell.font = Font(italic=True, size=9)
+    cell.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.row_dimensions[2].height = 100
+
+    indexed = {(r["disease"], r["model"], r["features"]): r for r in rows}
+    present = sorted({r["disease"] for r in rows})
+
+    row = 4
+    for key, display, _ in diseases:
+        if key not in present:
+            continue
+        ws.cell(row=row, column=1, value=display).font = Font(bold=True, size=11)
+        row += 1
+        ws.cell(row=row, column=1, value="Model")
+        for j, feature in enumerate(MODEL_CLASS_FEATURES):
+            ws.cell(row=row, column=2 + j, value=feature)
+        ws.cell(row=row, column=5, value="LL+HL minus LL")
+        ws.cell(row=row, column=6, value="Knowledge helps?")
+        style_header(ws, row, 6)
+        row += 1
+
+        helped = total = 0
+        for model in MODEL_CLASS_ORDER:
+            records = [indexed.get((key, model, f)) for f in MODEL_CLASS_FEATURES]
+            if not any(records):
+                continue
+            ws.cell(row=row, column=1, value=model).font = BOLD
+            values = []
+            for j, record in enumerate(records):
+                value = _number(record, "median_rank_unseen", 1) if record else None
+                lo = _number(record, "median_rank_unseen_lo", 1) if record else None
+                hi = _number(record, "median_rank_unseen_hi", 1) if record else None
+                text = ""
+                if value is not None:
+                    text = "{:g}".format(value)
+                    if lo is not None and hi is not None:
+                        text += "  [{:g}, {:g}]".format(lo, hi)
+                cell = ws.cell(row=row, column=2 + j, value=text)
+                cell.alignment = Alignment(horizontal="center")
+                cell.font = Font(size=9)
+                cell.border = BOX
+                values.append(value)
+
+            ll, _hl, both = values
+            if ll is not None and both is not None:
+                delta = both - ll
+                total += 1
+                if delta < 0:
+                    helped += 1
+                cell = ws.cell(row=row, column=5, value=round(delta, 1))
+                cell.number_format = "+0.0;-0.0"
+                cell.alignment = Alignment(horizontal="center")
+                cell.border = BOX
+                verdict = ws.cell(row=row, column=6,
+                                  value="yes" if delta < 0 else "no")
+                verdict.alignment = Alignment(horizontal="center")
+                verdict.border = BOX
+                verdict.fill = BEST_FILL if delta < 0 else PatternFill(
+                    "solid", fgColor="F8CBAD")
+            row += 1
+
+        ws.cell(row=row, column=1,
+                value="knowledge inclusion improves median rank in {}/{} model classes".format(
+                    helped, total)).font = Font(italic=True, size=9, bold=True)
+        row += 2
+
+    ws.cell(row=row, column=1,
+            value="Lower median rank is better. Intervals are 95% bootstrap over the target "
+                  "genes, the same quantity reported for every model run in this workbook. "
+                  "These plain classifiers are weaker in absolute terms than the published "
+                  "KI-GNN, which is the honest reading: simple models reproduce the DIRECTION "
+                  "of the effect, the graph model captures more of it. That defends the model "
+                  "choice rather than undercutting it.").font = Font(italic=True, size=9)
+    ws.row_dimensions[row].height = 42
+    ws.cell(row=row, column=1).alignment = Alignment(wrap_text=True, vertical="top")
+
+    ws.column_dimensions["A"].width = 24
+    for j in range(2, 5):
+        ws.column_dimensions[get_column_letter(j)].width = 26
+    ws.column_dimensions["E"].width = 18
+    ws.column_dimensions["F"].width = 18
 
 
 TABLE1_CONFIGS = ["RF", "C-RF", "KI-RF", "GNN", "C-GNN", "KI-GNN"]
@@ -1223,6 +1369,10 @@ def main():
     parser.add_argument("--revision-contrasts",
                         default=os.path.join(revision, "revision_metrics_contrasts.tsv"),
                         help="paired contrasts, from revision_analysis.py")
+    parser.add_argument("--model-classes",
+                        default=os.path.join(root, "additional_experiments", "model_classes",
+                                             "model_class_metrics.tsv"),
+                        help="R1.3 results from run_model_classes.py")
     parser.add_argument("-o", "--out", default=os.path.join(root, "rebuttal", "Supp_Data_3_popularity.xlsx"))
     parser.add_argument("--cutoff-applied", action="store_true", default=True,
                         help="set when the primary popularity TSV respects the date cutoff")
@@ -1273,7 +1423,7 @@ def main():
         write_late_fusion(wb.create_sheet("Late fusion (R1.5d, R4.1)"),
                           metric_rows, contrast_rows, PAPER_DISEASES)
         write_ablations(wb.create_sheet("Ablations (R1.5b, R1.5e)"),
-                        metric_rows, contrast_rows)
+                        metric_rows, contrast_rows, PAPER_DISEASES)
 
     if metric_rows:
         # Published medians, keyed (disease, config), from the two lookups.
@@ -1289,6 +1439,13 @@ def main():
                     continue
         write_corrected_table1(wb.create_sheet("Corrected Table 1"),
                                metric_rows, published, PAPER_DISEASES)
+
+    model_class_rows = load_tsv(args.model_classes)
+    if model_class_rows:
+        print("Reading model-class results from {} ({} rows)".format(
+            args.model_classes, len(model_class_rows)))
+        write_model_classes(wb.create_sheet("Model classes (R1.3)"),
+                            model_class_rows, PAPER_DISEASES)
     if os.path.exists(args.counts):
         write_temporal_evidence(wb.create_sheet("Prior literature (R1.7)"),
                                 args.counts, args.disease_dir, all_diseases)

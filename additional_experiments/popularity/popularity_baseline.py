@@ -35,6 +35,12 @@ import statistics
 import sys
 from datetime import datetime
 
+# Same bootstrap the model runs use, so the baseline's confidence intervals are
+# the same quantity rather than a differently-defined one.
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "revision_runs"))
+from revision_analysis import bootstrap as target_bootstrap  # noqa: E402
+
 K_THRESHOLDS = [10, 25, 50, 100, 200, 250, 500, 1000]
 PERCENTAGES = [1, 5, 10]
 CUTOFF_DEFAULT = "2022-10-01"
@@ -148,7 +154,7 @@ def score(ranked_genes, targets, universe_size):
     return metrics
 
 
-def evaluate_disease(disease, counts, disease_dir, n_seeds):
+def evaluate_disease(disease, counts, disease_dir, n_seeds, n_boot=2000, seed=1):
     pre_file, post_file = DISEASE_MAP[disease]
     post = read_gene_list(os.path.join(disease_dir, post_file))
     if pre_file is None:
@@ -170,6 +176,17 @@ def evaluate_disease(disease, counts, disease_dir, n_seeds):
         random.Random(seed).shuffle(shuffled)
         shuffled.sort(key=lambda gene: -counts[gene])  # stable: ties keep shuffled order
         runs.append(score(shuffled, targets, len(universe)))
+
+    # Two different uncertainties, both reported, not interchangeable:
+    #   *_lo / *_hi        spread across tie-break orderings - how much does
+    #                      arbitrary ordering among equal counts move this?
+    #   *_boot_lo/_boot_hi bootstrap over target genes - how much does the
+    #                      choice of test genes move it? This is the quantity
+    #                      every model run in this revision reports.
+    ordered = sorted(universe, key=lambda gene: (-counts[gene], gene))
+    rank_of = {gene: i + 1 for i, gene in enumerate(ordered)}
+    hit_ranks = [rank_of[gene] for gene in sorted(targets)]
+    _, boot_bounds = target_bootstrap(hit_ranks, len(universe), n_boot, seed)
 
     # Where do the *already known* (pre-split) genes sit on a pure popularity
     # ranking of the full gene set? This is the direct measure of the
@@ -211,6 +228,9 @@ def evaluate_disease(disease, counts, disease_dir, n_seeds):
         row[metric] = round(statistics.median(values), 4)
         row[metric + "_lo"] = round(min(values), 4)
         row[metric + "_hi"] = round(max(values), 4)
+        if metric in boot_bounds:
+            row[metric + "_boot_lo"] = round(boot_bounds[metric][0], 4)
+            row[metric + "_boot_hi"] = round(boot_bounds[metric][1], 4)
     return row
 
 
@@ -247,6 +267,9 @@ def main():
     parser.add_argument("--disease-dir", default=os.path.join(root, "data", "kiml_data", "diseases"))
     parser.add_argument("--diseases", nargs="*", default=sorted(DISEASE_MAP),
                         help="subset of diseases to score (default: all)")
+    parser.add_argument("--n-boot", type=int, default=2000,
+                        help="bootstrap resamples of the target genes")
+    parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--seeds", type=int, default=20,
                         help="tie-break orderings to average over (default: 20)")
     parser.add_argument("-o", "--out", default=os.path.join(here, "popularity_rank_metrics.tsv"))
@@ -294,7 +317,8 @@ def main():
         if disease not in DISEASE_MAP:
             print("  [skip] unknown disease: {}".format(disease))
             continue
-        row = evaluate_disease(disease, counts, args.disease_dir, args.seeds)
+        row = evaluate_disease(disease, counts, args.disease_dir, args.seeds,
+                               n_boot=args.n_boot, seed=args.seed)
         if row is None:
             continue
         rows.append(row)
