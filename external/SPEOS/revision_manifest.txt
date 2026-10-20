@@ -2,3 +2,10 @@ Rev_dee_KIGNN-TFIDF_s1
 Rev_dee_KIGNN-TFIDF-TITLE_s1
 Rev_cp_KIGNN-TFIDF_s1
 Rev_cp_KIGNN-TFIDF-TITLE_s1
+Rev_dee_KIGNN-DOC2VEC_s1
+Rev_cp_KIGNN-DOC2VEC_s1
+Rev_intellectual_disability_KIGNN_s1
+Rev_intellectual_disability_KIMLP_s1
+Rev_cp_GNN_s1
+Rev_cp_GNN-KG_s1
+Rev_cp_KIGNN-PPI_s1

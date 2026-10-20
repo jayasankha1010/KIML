@@ -227,3 +227,10 @@ external/SPEOS/results_processing/*.tsv
 *.png
 external/Mantis/Mantis_Out/
 external/Mantis/work/
+# Derived feature matrices: ~60-70 MB each as float text, regenerable from the
+# PubMed corpus on Spartan via additional_experiments/text_representations/.
+# Transfer these with rsync rather than git - see that directory's README.
+additional_experiments/text_representations/*.txt
+# Per-gene prediction files copied back from cluster runs. Small individually
+# (~600 KB) but there are dozens, and they are reproducible from the run logs.
+additional_experiments/revision_runs/paper_predictions/*.tsv

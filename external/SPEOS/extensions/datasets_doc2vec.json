@@ -1,0 +1,29 @@
+[
+  {
+    "name": "ChildExpression",
+    "identifier": "hgnc",
+    "function": "preprocess_mydata_expression",
+    "args": [],
+    "kwargs": {
+      "path": "./../../data/kiml_data/ahbd/child_expression.txt"
+    }
+  },
+  {
+    "name": "PrebirthExpression",
+    "identifier": "hgnc",
+    "function": "preprocess_mydata_expression",
+    "args": [],
+    "kwargs": {
+      "path": "./../../data/kiml_data/ahbd/prebirth_expression.txt"
+    }
+  },
+  {
+    "name": "PubmedDoc2Vec2022",
+    "identifier": "hgnc",
+    "function": "preprocess_mydata_expression",
+    "args": [],
+    "kwargs": {
+      "path": "./../../additional_experiments/text_representations/pubmed_doc2vec_full_384d_2022_09_speos_symbols.txt"
+    }
+  }
+]

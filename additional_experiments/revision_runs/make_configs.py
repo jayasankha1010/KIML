@@ -101,6 +101,10 @@ VARIANTS = {
     # titles alone already carry.
     "KIGNN-TFIDF": ("./extensions/datasets_tfidf_full.json", KG, "GeneNetwork", 2),
     "KIGNN-TFIDF-TITLE": ("./extensions/datasets_tfidf_title.json", KG, "GeneNetwork", 2),
+    # Doc2Vec: learned and dense like MiniLM, but trained only on the
+    # cutoff-restricted corpus. If it matches MiniLM the conclusion sharpens
+    # from "classical methods suffice" to "pretraining adds nothing".
+    "KIGNN-DOC2VEC": ("./extensions/datasets_doc2vec.json", KG, "GeneNetwork", 2),
 }
 
 # Every variant above except KIMLP uses the published 2 message-passing layers.
@@ -221,6 +225,10 @@ def main():
     parser.add_argument("--diseases", nargs="*", default=sorted(DISEASES))
     parser.add_argument("--variants", nargs="*", default=["GNN", "CGNN", "KIGNN"],
                         help="subset of {}".format(sorted(VARIANTS)))
+    parser.add_argument("--append", action="store_true",
+                        help="add to the existing manifest and keep existing "
+                             "generated configs, instead of regenerating from "
+                             "scratch. Lets unrelated batches be queued together.")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -239,7 +247,7 @@ def main():
     manifest = []
     generated = []
 
-    stale = [f for f in os.listdir(config_dir)
+    stale = [] if args.append else [f for f in os.listdir(config_dir)
              if f.startswith("Rev_") and f.endswith(".yaml")]
     if stale:
         print("  removing {} stale generated config(s)".format(len(stale)))
@@ -275,6 +283,10 @@ def main():
                 manifest.append(name)
 
     manifest_path = os.path.join(speos, "revision_manifest.txt")
+    if args.append and os.path.exists(manifest_path):
+        with open(manifest_path) as handle:
+            existing = [l.strip() for l in handle if l.strip()]
+        manifest = existing + [m for m in manifest if m not in existing]
     if not args.dry_run:
         with open(manifest_path, "w") as handle:
             handle.write("\n".join(manifest) + "\n")
