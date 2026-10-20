@@ -63,6 +63,28 @@ for f in "$FULL_TEXT" "$LABELLED"; do
     [ -f "$f" ] || { echo "[Error] missing input: $f"; exit 1; }
 done
 
+# Doc2Vec needs gensim, which is not in the speos_kiml environment. Try to add
+# it, but do not let a failure cost us the TF-IDF arms: compute nodes on some
+# partitions have no outbound network (web_proxy is unavailable on sapphire),
+# so pip may not reach PyPI from here. If that happens, install it once on the
+# login node instead and resubmit:
+#     conda activate speos_kiml && pip install gensim
+HAVE_GENSIM=1
+if python -c "import gensim" 2>/dev/null; then
+    echo "[info] gensim already present: $(python -c 'import gensim;print(gensim.__version__)')"
+else
+    echo "--> gensim not found, attempting install"
+    if pip install --quiet gensim 2>&1 | tail -5 && python -c "import gensim" 2>/dev/null; then
+        echo "[info] gensim installed: $(python -c 'import gensim;print(gensim.__version__)')"
+    else
+        HAVE_GENSIM=0
+        echo "[warn] could not install gensim from this node."
+        echo "       The TF-IDF arms will still run; Doc2Vec will be skipped."
+        echo "       Install it on the LOGIN node and resubmit:"
+        echo "         conda activate speos_kiml && pip install gensim"
+    fi
+fi
+
 echo
 echo "--> Inspecting both inputs"
 python -u "$SCRIPT" --candidates "$FULL_TEXT" "$LABELLED" --inspect-only
@@ -86,6 +108,10 @@ ARM2=$?
 echo "    finished in ${SECONDS}s (exit $ARM2)"
 
 echo
+if [ "$HAVE_GENSIM" -eq 0 ]; then
+    echo "--> Arm 3: SKIPPED (gensim unavailable)"
+    ARM3=0
+else
 echo "--> Arm 3: Doc2Vec on title + abstract"
 # The third representation R1.4 names. Learned and dense like MiniLM, but
 # trained only on the cutoff-restricted corpus, so it shares TF-IDF's property
@@ -96,6 +122,7 @@ python -u "$SCRIPT" --input "$FULL_TEXT" --text-scope full \
     -o "$OUT_DIR/pubmed_doc2vec_full_${DIM}d_2022_09.txt"
 ARM3=$?
 echo "    finished in ${SECONDS}s (exit $ARM3)"
+fi
 
 echo
 echo "----------------------------------------"
