@@ -1,0 +1,103 @@
+========================================
+ KIML: classical text representations
+   started : Wed 21 Oct 2026 01:41:31 AEDT
+========================================
+[info] web_proxy unavailable; continuing
+[info] gensim already present: 4.4.0
+
+--> Inspecting both inputs
+==============================================================================
+ INSPECTION - which file holds the fuller text?
+==============================================================================
+
+/data/projects/punim2353/chathura/pubmed/gene_details_2022_09.csv
+   size 1246 MB, 400 genes sampled
+   papers per gene : median 42
+   words per paper : median 201, mean 197, max 673
+   e.g. NGB: Coupling of the heme and an internal disulfide bond in human neuroglobin. Neuroglobin displays a hexacoordinat...
+   e.g. CROCC2: Pinstripe: a suite of programs for integrating transcriptomic and proteomic datasets identifies novel proteins...
+
+/data/projects/punim2353/chathura/pubmed/gene_paper_details_2022_09.csv
+   size 1263 MB, 400 genes sampled
+   papers per gene : median 42
+   words per paper : median 203, mean 199, max 675
+   e.g. NGB: Title: Coupling of the heme and an internal disulfide bond in human neuroglobin. Abstract: Neuroglobin display...
+   e.g. CROCC2: Title: Pinstripe: a suite of programs for integrating transcriptomic and proteomic datasets identifies novel p...
+
+------------------------------------------------------------------------------
+ VERDICT
+   fuller text : gene_paper_details_2022_09.csv
+                 median 203 words per paper
+   thinner     : gene_details_2022_09.csv
+                 median 201 words per paper
+
+   SAME TEXT, different formatting. gene_paper_details_2022_09.csv carries literal
+   'Title:' / 'Abstract:' prefixes; gene_details_2022_09.csv has them
+   stripped. The word-count gap is just those tokens.
+
+   Use gene_details_2022_09.csv - it is the file
+   generate_pubmed_embeddings.py reads, so the MiniLM embeddings were
+   built from exactly this text and the comparison isolates the encoder.
+   (The labels would in any case be neutralised by TF-IDF: a term in
+   every document has zero inverse document frequency.)
+==============================================================================
+
+--> Arm 1: title + abstract (same text MiniLM saw)
+Reading /data/projects/punim2353/chathura/pubmed/gene_details_2022_09.csv
+  text scope: title + abstract
+  19078 genes
+  [warn] 23 genes have no text; they will get all-zero vectors and should be expected to rank poorly
+Fitting TF-IDF (min_df=5, max_features=50000)
+  vocabulary 50000, matrix (19078, 50000)
+Reducing to 384 dimensions with truncated SVD
+  explained variance 33.3%
+Writing additional_experiments/text_representations/pubmed_tfidf_svd_full_384d_2022_09.txt
+  19078 rows x 384 dims
+
+Next: register this file in external/SPEOS/extensions/ as a datasets
+entry using preprocess_mydata_expression, then generate configs that
+point at it instead of the MiniLM embeddings.
+    finished in 211s (exit 0)
+
+--> Arm 2: title only
+Reading /data/projects/punim2353/chathura/pubmed/gene_paper_details_2022_09.csv
+  text scope: title only
+  19078 genes
+  [warn] 23 genes have no text; they will get all-zero vectors and should be expected to rank poorly
+Fitting TF-IDF (min_df=5, max_features=50000)
+  vocabulary 35673, matrix (19078, 35673)
+Reducing to 384 dimensions with truncated SVD
+  explained variance 32.5%
+Writing additional_experiments/text_representations/pubmed_tfidf_svd_title_384d_2022_09.txt
+  19078 rows x 384 dims
+
+Next: register this file in external/SPEOS/extensions/ as a datasets
+entry using preprocess_mydata_expression, then generate configs that
+point at it instead of the MiniLM embeddings.
+    finished in 41s (exit 0)
+
+--> Arm 3: Doc2Vec on title + abstract
+Reading /data/projects/punim2353/chathura/pubmed/gene_details_2022_09.csv
+  text scope: title + abstract
+  19078 genes
+  [warn] 23 genes have no text; they will get all-zero vectors and should be expected to rank poorly
+Training Doc2Vec: 19078 docs, 384 dims, 20 epochs
+  vocabulary 447823
+Writing additional_experiments/text_representations/pubmed_doc2vec_full_384d_2022_09.txt
+  19078 rows x 384 dims
+    finished in 999s (exit 0)
+
+----------------------------------------
+[Success] all three arms built at Wed 21 Oct 2026 02:02:35 AEDT
+    19078 additional_experiments/text_representations/pubmed_doc2vec_full_384d_2022_09.txt
+    19078 additional_experiments/text_representations/pubmed_tfidf_svd_full_384d_2022_09.txt
+    19078 additional_experiments/text_representations/pubmed_tfidf_svd_title_384d_2022_09.txt
+    57234 total
+
+Then re-key each to the SPEOS symbol namespace:
+  for f in additional_experiments/text_representations/pubmed_*_384d_2022_09.txt; do
+    python additional_experiments/text_representations/align_to_speos_symbols.py --matrix $f
+  done
+
+Next: point the model-class script at each matrix for a laptop-speed
+comparison across seven diseases, before committing any GPU time.

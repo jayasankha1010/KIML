@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/additional_experiments/text_representations/build_text_features.py", line 357, in <module>
+    sys.exit(main())
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/additional_experiments/text_representations/build_text_features.py", line 351, in main
+    return build(args.input, args.method, args.dim, args.min_df,
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/additional_experiments/text_representations/build_text_features.py", line 262, in build
+    features = build_doc2vec(genes, documents, dim, seed, epochs, min_count)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/additional_experiments/text_representations/build_text_features.py", line 209, in build_doc2vec
+    from gensim.models.doc2vec import Doc2Vec, TaggedDocument
+ModuleNotFoundError: No module named 'gensim'
