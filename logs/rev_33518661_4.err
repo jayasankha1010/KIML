@@ -1,0 +1,57 @@
+Rev_dee_KIGNN-DOC2VEC_s1 2026-10-21 02:54:02,179 [INFO] speos.experiment (bootstrap): Starting run Rev_dee_KIGNN-DOC2VEC_s1
+Rev_dee_KIGNN-DOC2VEC_s1 2026-10-21 02:54:02,836 [INFO] speos.experiment (bootstrap): Cuda is available: True
+Rev_dee_KIGNN-DOC2VEC_s1 2026-10-21 02:54:02,850 [INFO] speos.experiment (bootstrap): Using device(s): ['cuda:0']
+Rev_dee_KIGNN-DOC2VEC_s1 2026-10-21 02:54:02,851 [INFO] speos.preprocessing.preprocessor: Using Adjacency matrices: ['covaries', 'pathway']
+Rev_dee_KIGNN-DOC2VEC_s1 2026-10-21 02:54:02,851 [INFO] speos.preprocessing.preprocessor: Using 1 mappings with ground truth gt_dee 
+Rev_dee_KIGNN-DOC2VEC_s1 2026-10-21 02:54:02,853 [INFO] speos.preprocessing.preprocessor: Using 1 additional node data sources: ['ChildExpression']
+Rev_dee_KIGNN-DOC2VEC_s1 2026-10-21 02:54:02,853 [INFO] speos.preprocessing.preprocessor: Using 2 additional node data sources: ['ChildExpression', 'PrebirthExpression']
+Rev_dee_KIGNN-DOC2VEC_s1 2026-10-21 02:54:02,853 [INFO] speos.preprocessing.preprocessor: Using 3 additional node data sources: ['ChildExpression', 'PrebirthExpression', 'PubmedDoc2Vec2022']
+Processing...
+Traceback (most recent call last):
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/outer_crossval.py", line 11, in <module>
+    pipeline = OuterCVPipeline(args.config)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/pipeline.py", line 79, in __init__
+    self.crossval = OuterCVWrapper(self.config)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/wrappers.py", line 268, in __init__
+    self.inner_cv = CVWrapper(config, slave=True)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/wrappers.py", line 131, in __init__
+    self.base_experiment = Experiment(config, id="bootstrap")
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/experiment.py", line 42, in __init__
+    self.dataset = DatasetBootstrapper(holdout_size=config.input.holdout_size, name=self.name,
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/preprocessing/datasets.py", line 152, in __init__
+    self.dataset = MultiGeneDataset(name, config, holdout_size)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/preprocessing/datasets.py", line 121, in __init__
+    super().__init__(name, config, holdout_size, transform, pre_transform)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/preprocessing/datasets.py", line 26, in __init__
+    super(GeneDataset, self).__init__(self.root, transform, pre_transform)
+  File "/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/torch_geometric/data/in_memory_dataset.py", line 76, in __init__
+    super().__init__(root, transform, pre_transform, pre_filter, log)
+  File "/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/torch_geometric/data/dataset.py", line 102, in __init__
+    self._process()
+  File "/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/torch_geometric/data/dataset.py", line 235, in _process
+    self.process()
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/preprocessing/datasets.py", line 142, in process
+    return super().process()
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/preprocessing/datasets.py", line 62, in process
+    X, y, adj = self.preprocessor.get_data()
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/preprocessing/preprocessor.py", line 92, in get_data
+    self.build_graph(features)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/preprocessing/preprocessor.py", line 79, in build_graph
+    self._add_x_features(use_embeddings=use_embeddings)
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/preprocessing/preprocessor.py", line 390, in _add_x_features
+    addtl_dfs = [getattr(hooks, addtl_input["function"])(*addtl_input["args"], **addtl_input["kwargs"]) for addtl_input in self.additional_inputs]
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/preprocessing/preprocessor.py", line 390, in <listcomp>
+    addtl_dfs = [getattr(hooks, addtl_input["function"])(*addtl_input["args"], **addtl_input["kwargs"]) for addtl_input in self.additional_inputs]
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/extensions/preprocessing.py", line 18, in preprocess_mydata_expression
+    df = pd.read_csv(path, sep=" ", header=None, index_col=0)
+  File "/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+  File "/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+  File "/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+  File "/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+FileNotFoundError: [Errno 2] No such file or directory: './../../additional_experiments/text_representations/pubmed_doc2vec_full_384d_2022_09_speos_symbols.txt'
