@@ -1251,6 +1251,133 @@ def write_model_classes(ws, rows, diseases):
     ws.column_dimensions["F"].width = 18
 
 
+REPRESENTATIONS = [
+    ("MiniLM (published)", "model_class_metrics.tsv", "PubMed", "KIML"),
+    ("TF-IDF title+abstract", "model_class_tfidf_full.tsv", "TFIDF full", "TFIDF full"),
+    ("TF-IDF title only", "model_class_tfidf_title.tsv", "TFIDF title", "TFIDF title"),
+]
+REPRESENTATION_MODELS = ["Logistic regression", "Random forest",
+                         "Gradient boosting", "MLP"]
+
+
+def write_text_representations(ws, tables, diseases):
+    """R1.4 / R1.5a: does the sentence transformer earn its place?"""
+    ws.cell(row=1, column=1,
+            value="Text representation comparison (Reviewer 1, comments 4 and 5a)").font = Font(bold=True, size=12)
+    note = ("R1.4: \"The sentence transformer is essentially being used as a generic "
+            "text-to-vector representation ... Classical text representations such as "
+            "TF-IDF, TF-IDF+SVD/LSA, or Doc2Vec would provide important controls. Without "
+            "these, the results end up showing that adding literature-derived features "
+            "helps, rather than that contextual transformer representations provide "
+            "meaningful additional value.\"  All three representations are built from the "
+            "SAME date-filtered text, at the SAME 384 dimensions, and re-keyed to the SPEOS "
+            "gene namespace, so the only thing that differs is the encoder. The title-only "
+            "arm additionally separates what abstracts contribute from what titles already "
+            "carry. Values are median rank, lower is better; intervals are 95% bootstrap "
+            "over target genes.")
+    cell = ws.cell(row=2, column=1, value=note)
+    cell.font = Font(italic=True, size=9)
+    cell.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.row_dimensions[2].height = 90
+
+    present = sorted({r["disease"] for t in tables.values() for r in t})
+
+    row = 4
+    for block, feature_kind in (("Literature features alone", "HL"),
+                                ("Literature + expression", "LL+HL")):
+        ws.cell(row=row, column=1, value=block).font = Font(bold=True, size=11)
+        row += 1
+        ws.cell(row=row, column=1, value="Disease")
+        ws.cell(row=row, column=2, value="Model")
+        for j, (label, _, _, _) in enumerate(REPRESENTATIONS):
+            ws.cell(row=row, column=3 + j, value=label)
+        ws.cell(row=row, column=6, value="Best")
+        style_header(ws, row, 6)
+        row += 1
+
+        wins = {label: 0 for label, _, _, _ in REPRESENTATIONS}
+        for key, display, _ in diseases:
+            if key not in present:
+                continue
+            for model in REPRESENTATION_MODELS:
+                ws.cell(row=row, column=1, value=display).font = Font(size=9)
+                ws.cell(row=row, column=2, value=model).font = Font(size=9)
+                values = []
+                for j, (label, filename, hl_tag, both_tag) in enumerate(REPRESENTATIONS):
+                    table = tables.get(filename, [])
+                    tag = hl_tag if feature_kind == "HL" else both_tag
+                    want = "HL ({})".format(tag) if feature_kind == "HL" \
+                        else "LL+HL ({})".format(tag)
+                    record = next((r for r in table if r["disease"] == key
+                                   and r["model"] == model
+                                   and r["features"] == want), None)
+                    value = _number(record, "median_rank_unseen", 1) if record else None
+                    lo = _number(record, "median_rank_unseen_lo", 1) if record else None
+                    hi = _number(record, "median_rank_unseen_hi", 1) if record else None
+                    text = ""
+                    if value is not None:
+                        text = "{:g}".format(value)
+                        if lo is not None and hi is not None:
+                            text += "  [{:g}, {:g}]".format(lo, hi)
+                    cell = ws.cell(row=row, column=3 + j, value=text)
+                    cell.alignment = Alignment(horizontal="center")
+                    cell.font = Font(size=9)
+                    cell.border = BOX
+                    values.append((value, label, cell))
+
+                scored = [(v, l, c) for v, l, c in values if v is not None]
+                # Only declare a winner when there is something to compare
+                # against. The TF-IDF arms were run on three diseases; marking
+                # MiniLM "best" on the others would be an artefact of absence.
+                if len(scored) > 1:
+                    best = min(scored)
+                    best[2].fill = BEST_FILL
+                    best[2].font = BOLD
+                    wins[best[1]] += 1
+                    ws.cell(row=row, column=6, value=best[1]).font = Font(size=9)
+                    ws.cell(row=row, column=6).alignment = Alignment(horizontal="center")
+                elif scored:
+                    ws.cell(row=row, column=6, value="not compared").font = Font(
+                        size=9, italic=True, color="808080")
+                    ws.cell(row=row, column=6).alignment = Alignment(horizontal="center")
+                row += 1
+
+        ws.cell(row=row, column=1, value="wins: " + ", ".join(
+            "{} {}".format(l, n) for l, n in wins.items())).font = Font(
+                italic=True, size=9, bold=True)
+        row += 2
+
+    for text in [
+        "FINDING: the classical representation outperforms the sentence transformer. "
+        "TF-IDF+SVD on title+abstract gives a lower median rank than MiniLM in 11 of 12 "
+        "disease-model combinations, both as literature features alone and in combination "
+        "with expression. Reviewer 1's suspicion is therefore correct, and more strongly "
+        "than stated: the benefit comes from the literature content, not from contextual "
+        "encoding.",
+        "This is not purely a negative result. A TF-IDF representation is fit only on "
+        "pre-cutoff text and has no pretrained component, which removes the objection "
+        "Reviewer 3 raised in comment 5 - that a release date cannot bound what is in "
+        "MiniLM's pretraining corpus. It is also directly interpretable, since the terms "
+        "driving each gene vector can be listed. And it partly rescues Intellectual "
+        "Disability, where knowledge inclusion helped 0 of 4 model classes under MiniLM "
+        "and 2 of 4 under TF-IDF.",
+        "CAVEAT: these are four plain classifiers, not the GNN. Dense smooth embeddings may "
+        "suit message passing differently from sparse SVD projections, so the GNN arm must "
+        "be run before any claim here is carried into the manuscript.",
+    ]:
+        cell = ws.cell(row=row, column=1, value=text)
+        cell.font = Font(italic=True, size=9)
+        cell.alignment = Alignment(wrap_text=True, vertical="top")
+        ws.row_dimensions[row].height = 46
+        row += 1
+
+    ws.column_dimensions["A"].width = 26
+    ws.column_dimensions["B"].width = 22
+    for j in range(len(REPRESENTATIONS)):
+        ws.column_dimensions[get_column_letter(3 + j)].width = 24
+    ws.column_dimensions["F"].width = 22
+
+
 TABLE1_CONFIGS = ["RF", "C-RF", "KI-RF", "GNN", "C-GNN", "KI-GNN"]
 
 # Cells to leave at their published value, with the reason. ExpB96_mnd returns
@@ -1446,6 +1573,17 @@ def main():
             args.model_classes, len(model_class_rows)))
         write_model_classes(wb.create_sheet("Model classes (R1.3)"),
                             model_class_rows, PAPER_DISEASES)
+
+    mc_dir = os.path.join(root, "additional_experiments", "model_classes")
+    tables = {}
+    for _, filename, _, _ in REPRESENTATIONS:
+        rows_ = load_tsv(os.path.join(mc_dir, filename))
+        if rows_:
+            tables[filename] = rows_
+    if len(tables) > 1:
+        print("Reading {} text representations".format(len(tables)))
+        write_text_representations(wb.create_sheet("Text representations (R1.4)"),
+                                   tables, PAPER_DISEASES)
     if os.path.exists(args.counts):
         write_temporal_evidence(wb.create_sheet("Prior literature (R1.7)"),
                                 args.counts, args.disease_dir, all_diseases)

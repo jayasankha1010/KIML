@@ -168,12 +168,28 @@ def main():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--diseases", nargs="*", default=["dee"],
                         help="subset of {}".format(sorted(DISEASES)))
+    parser.add_argument("--pubmed", default=None,
+                        help="override the HL feature matrix, e.g. a TF-IDF build. "
+                             "Must be keyed on the same gene symbols as the "
+                             "expression files - run align_to_speos_symbols.py first.")
+    parser.add_argument("--hl-label", default=None,
+                        help="name for the HL representation in the output")
     parser.add_argument("--folds", type=int, default=5)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--n-boot", type=int, default=2000)
     parser.add_argument("-o", "--out",
                         default=os.path.join(HERE, "model_class_metrics.tsv"))
     args = parser.parse_args()
+
+    if args.pubmed:
+        label = args.hl_label or os.path.basename(args.pubmed)
+        FEATURE_SETS.clear()
+        FEATURE_SETS.update({
+            "LL (expression)": EXPRESSION,
+            "HL ({})".format(label): [args.pubmed],
+            "LL+HL ({})".format(label): EXPRESSION + [args.pubmed],
+        })
+        print("HL representation: {}\n".format(args.pubmed))
 
     results = []
     print("{:24}{:22}{:18}{:>8}{:>10}  {}".format(

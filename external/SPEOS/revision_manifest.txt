@@ -1,2 +1,4 @@
-Rev_cp_KIGNN_s1
-Rev_cp_KIMLP_s1
+Rev_dee_KIGNN-TFIDF_s1
+Rev_dee_KIGNN-TFIDF-TITLE_s1
+Rev_cp_KIGNN-TFIDF_s1
+Rev_cp_KIGNN-TFIDF-TITLE_s1

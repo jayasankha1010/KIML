@@ -94,6 +94,13 @@ VARIANTS = {
     # even once fixed it hardcodes 50 layers of width 70 against KIGNN's
     # 5+2+5 of width 50 - which would confound depth and width with the graph.
     "KIMLP": ("./extensions/datasets.json", KG, "GeneNetwork", 0),
+    # R1.4 / R1.5a: identical to KIGNN except the literature matrix. Classical
+    # TF-IDF+SVD at the same 384 dimensions as MiniLM, re-keyed to the SPEOS
+    # symbol namespace by align_to_speos_symbols.py so the universe is
+    # unchanged. Two text scopes, to separate what abstracts add from what
+    # titles alone already carry.
+    "KIGNN-TFIDF": ("./extensions/datasets_tfidf_full.json", KG, "GeneNetwork", 2),
+    "KIGNN-TFIDF-TITLE": ("./extensions/datasets_tfidf_title.json", KG, "GeneNetwork", 2),
 }
 
 # Every variant above except KIMLP uses the published 2 message-passing layers.
