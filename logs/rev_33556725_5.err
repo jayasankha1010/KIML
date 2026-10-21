@@ -1,0 +1,594 @@
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:40:47,024 [INFO] speos.experiment (bootstrap): Starting run Rev_cp_KIGNN-DOC2VEC_s1
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:40:47,843 [INFO] speos.experiment (bootstrap): Cuda is available: True
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:40:47,858 [INFO] speos.experiment (bootstrap): Using device(s): ['cuda:0']
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:40:47,897 [INFO] speos.preprocessing.preprocessor: Using Adjacency matrices: ['covaries', 'pathway']
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:40:47,897 [INFO] speos.preprocessing.preprocessor: Using 1 mappings with ground truth gt_cp 
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:40:47,898 [INFO] speos.preprocessing.preprocessor: Using 1 additional node data sources: ['ChildExpression']
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:40:47,898 [INFO] speos.preprocessing.preprocessor: Using 2 additional node data sources: ['ChildExpression', 'PrebirthExpression']
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:40:47,898 [INFO] speos.preprocessing.preprocessor: Using 3 additional node data sources: ['ChildExpression', 'PrebirthExpression', 'PubmedDoc2Vec2022']
+Processing...
+Done!
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:46:04,484 [INFO] speos.preprocessing.preprocessor: Number of positives in ground truth gt_cp: 92
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:46:05,095 [INFO] speos.preprocessing.datasets: Loading Processed Data from ./data/processed/Rev_cp_KIGNN-DOC2VEC_s1.pt
+/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/torch_geometric/data/in_memory_dataset.py:284: UserWarning: It is not recommended to directly access the internal storage format `data` of an 'InMemoryDataset'. If you are absolutely certain what you are doing, access the internal storage via `InMemoryDataset._data` instead to suppress this warning. Alternatively, you can access stacked individual attributes of every graph via `dataset.{attr_name}`.
+  warnings.warn(msg)
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:46:05,289 [INFO] speos.preprocessing.datasets: HeteroData(
+  x=[17282, 782],
+  y=[17282],
+  train_mask=[17282],
+  test_mask=[17282],
+  val_mask=[17282],
+  gene={ x=[17282, 782] },
+  (gene, covaries, gene)={ edge_index=[2, 82764] },
+  (gene, pathway, gene)={ edge_index=[2, 9130786] }
+)
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:46:05,289 [INFO] speos.experiment (bootstrap): Cuda is available: True
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:46:05,501 [INFO] speos.experiment (bootstrap): RelationalGeneNetwork(
+  (pre_mp): Sequential(
+    (0): Linear(782, 50, bias=True)
+    (1): ELU(alpha=1.0)
+    (2): Linear(50, 50, bias=True)
+    (3): ELU(alpha=1.0)
+    (4): Linear(50, 50, bias=True)
+    (5): ELU(alpha=1.0)
+    (6): Linear(50, 50, bias=True)
+    (7): ELU(alpha=1.0)
+    (8): Linear(50, 50, bias=True)
+    (9): ELU(alpha=1.0)
+    (10): Linear(50, 50, bias=True)
+    (11): ELU(alpha=1.0)
+  )
+  (post_mp): Sequential(
+    (0): Linear(50, 50, bias=True)
+    (1): ELU(alpha=1.0)
+    (2): Linear(50, 50, bias=True)
+    (3): ELU(alpha=1.0)
+    (4): Linear(50, 50, bias=True)
+    (5): ELU(alpha=1.0)
+    (6): Linear(50, 50, bias=True)
+    (7): ELU(alpha=1.0)
+    (8): Linear(50, 50, bias=True)
+    (9): ELU(alpha=1.0)
+    (10): Linear(50, 25, bias=True)
+    (11): ELU(alpha=1.0)
+    (12): Linear(25, 1, bias=True)
+  )
+  (mp): Sequential(
+    (0) - FiLMConv(50, 50, num_relations=2): x, edge_index -> x
+    (1) - ELU(alpha=1.0): x -> x
+    (2) - InstanceNorm(50): x -> x
+    (3) - FiLMConv(50, 50, num_relations=2): x, edge_index -> x
+    (4) - ELU(alpha=1.0): x -> x
+    (5) - InstanceNorm(50): x -> x
+  )
+)
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:46:05,503 [INFO] speos.experiment (bootstrap): Cuda is available: True
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:46:05,898 [INFO] speos.experiment (bootstrap): Created new ResultsHandler pointing to ./results/Rev_cp_KIGNN-DOC2VEC_s1.h5
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:46:06,148 [INFO] speos.experiment (bootstrap): Received data with 83 train positives, 15470 train negatives, 5 val positives, 860 val negatives, 4 test positives and 860 test negatives
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:46:06,150 [INFO] speos.experiment (bootstrap): Cuda is available: True
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:46:06,193 [INFO] speos.wrappers (ocv): Running Outer Cross Validation with 6 splits.
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:46:06,193 [INFO] speos.wrappers (ocv): Starting Outer Split 0
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:46:06,194 [INFO] speos.wrappers (cv): Running Inner Cross Validation with 5 splits.
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:46:06,194 [INFO] speos.wrappers (cv): Starting Inner Split 1
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:06,564 [INFO] speos.experiment (1): Starting run Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:06,564 [INFO] speos.experiment (1): Cuda is available: True
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:06,564 [INFO] speos.experiment (1): Using device(s): ['cuda:0']
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:06,565 [INFO] speos.preprocessing.preprocessor: Using Adjacency matrices: ['covaries', 'pathway']
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:06,566 [INFO] speos.preprocessing.preprocessor: Using 1 mappings with ground truth gt_cp 
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:06,566 [INFO] speos.preprocessing.preprocessor: Using 1 additional node data sources: ['ChildExpression']
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:06,566 [INFO] speos.preprocessing.preprocessor: Using 2 additional node data sources: ['ChildExpression', 'PrebirthExpression']
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:06,566 [INFO] speos.preprocessing.preprocessor: Using 3 additional node data sources: ['ChildExpression', 'PrebirthExpression', 'PubmedDoc2Vec2022']
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:06,567 [INFO] speos.preprocessing.datasets: Loading Processed Data from ./data/processed/Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1.pt
+/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/torch_geometric/data/in_memory_dataset.py:284: UserWarning: It is not recommended to directly access the internal storage format `data` of an 'InMemoryDataset'. If you are absolutely certain what you are doing, access the internal storage via `InMemoryDataset._data` instead to suppress this warning. Alternatively, you can access stacked individual attributes of every graph via `dataset.{attr_name}`.
+  warnings.warn(msg)
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:06,770 [INFO] speos.preprocessing.datasets: HeteroData(
+  x=[17282, 782],
+  y=[17282],
+  train_mask=[17282],
+  test_mask=[17282],
+  val_mask=[17282],
+  gene={ x=[17282, 782] },
+  (gene, covaries, gene)={ edge_index=[2, 82764] },
+  (gene, pathway, gene)={ edge_index=[2, 9130786] }
+)
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:06,771 [INFO] speos.experiment (1): Cuda is available: True
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:06,779 [INFO] speos.experiment (1): RelationalGeneNetwork(
+  (pre_mp): Sequential(
+    (0): Linear(782, 50, bias=True)
+    (1): ELU(alpha=1.0)
+    (2): Linear(50, 50, bias=True)
+    (3): ELU(alpha=1.0)
+    (4): Linear(50, 50, bias=True)
+    (5): ELU(alpha=1.0)
+    (6): Linear(50, 50, bias=True)
+    (7): ELU(alpha=1.0)
+    (8): Linear(50, 50, bias=True)
+    (9): ELU(alpha=1.0)
+    (10): Linear(50, 50, bias=True)
+    (11): ELU(alpha=1.0)
+  )
+  (post_mp): Sequential(
+    (0): Linear(50, 50, bias=True)
+    (1): ELU(alpha=1.0)
+    (2): Linear(50, 50, bias=True)
+    (3): ELU(alpha=1.0)
+    (4): Linear(50, 50, bias=True)
+    (5): ELU(alpha=1.0)
+    (6): Linear(50, 50, bias=True)
+    (7): ELU(alpha=1.0)
+    (8): Linear(50, 50, bias=True)
+    (9): ELU(alpha=1.0)
+    (10): Linear(50, 25, bias=True)
+    (11): ELU(alpha=1.0)
+    (12): Linear(25, 1, bias=True)
+  )
+  (mp): Sequential(
+    (0) - FiLMConv(50, 50, num_relations=2): x, edge_index -> x
+    (1) - ELU(alpha=1.0): x -> x
+    (2) - InstanceNorm(50): x -> x
+    (3) - FiLMConv(50, 50, num_relations=2): x, edge_index -> x
+    (4) - ELU(alpha=1.0): x -> x
+    (5) - InstanceNorm(50): x -> x
+  )
+)
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:06,780 [INFO] speos.experiment (1): Cuda is available: True
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:06,781 [INFO] speos.experiment (1): Using existing ResultsHandler pointing to ./results/Rev_cp_KIGNN-DOC2VEC_s1.h5
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:07,098 [INFO] speos.experiment (1): Received data with 60 train positives, 17190 train negatives, 16 val positives, 0 val negatives, 16 test positives and 0 test negatives
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:07,099 [INFO] speos.experiment (1): Cuda is available: True
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:07,750 [INFO] speos.experiment (1): Writing TensoBoard data to ./runs/Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:07,753 [INFO] speos.experiment (1): Starting epochs for 1000 iterations
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:07,753 [INFO] speos.experiment (1): Training for Epoch 0
+/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/experiment.py:237: RuntimeWarning: invalid value encountered in scalar divide
+  self.checkpoint_on = 2 * (self.train_precision * self.recall) / (
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:13,134 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:13,212 [INFO] speos.experiment (1): Eval Loss: 1.5753042036667528, Accuracy: 0.0, Recall: 0.0, Precision: 0.0, AUROC: nan, AUPRC: 1.0, F1: 0.0, MRR: 0.005558615049131655, MR: 4563.75, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:13,216 [INFO] speos.experiment (1): Training for Epoch 1
+/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/experiment.py:237: RuntimeWarning: invalid value encountered in scalar divide
+  self.checkpoint_on = 2 * (self.train_precision * self.recall) / (
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:13,331 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:13,385 [INFO] speos.experiment (1): Eval Loss: 1.5387068030764879, Accuracy: 0.0, Recall: 0.0, Precision: 0.0, AUROC: nan, AUPRC: 1.0, F1: 0.0, MRR: 0.004180109518522704, MR: 4134.875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:13,385 [INFO] speos.experiment (1): Training for Epoch 2
+/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/experiment.py:237: RuntimeWarning: invalid value encountered in scalar divide
+  self.checkpoint_on = 2 * (self.train_precision * self.recall) / (
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:13,500 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:13,554 [INFO] speos.experiment (1): Eval Loss: 1.5002888440312603, Accuracy: 0.0, Recall: 0.0, Precision: 0.0, AUROC: nan, AUPRC: 1.0, F1: 0.0, MRR: 0.00519218186035596, MR: 3941.625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:13,554 [INFO] speos.experiment (1): Training for Epoch 3
+/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/experiment.py:237: RuntimeWarning: invalid value encountered in scalar divide
+  self.checkpoint_on = 2 * (self.train_precision * self.recall) / (
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:13,668 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:13,722 [INFO] speos.experiment (1): Eval Loss: 1.448028744606192, Accuracy: 0.0, Recall: 0.0, Precision: 0.0, AUROC: nan, AUPRC: 1.0, F1: 0.0, MRR: 0.07006365696893047, MR: 3090.8125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:13,722 [INFO] speos.experiment (1): Training for Epoch 4
+/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/experiment.py:237: RuntimeWarning: invalid value encountered in scalar divide
+  self.checkpoint_on = 2 * (self.train_precision * self.recall) / (
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:13,837 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:13,891 [INFO] speos.experiment (1): Eval Loss: 1.3856890093167813, Accuracy: 0.0, Recall: 0.0, Precision: 0.0, AUROC: nan, AUPRC: 1.0, F1: 0.0, MRR: 0.015340227933460389, MR: 1934.375, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:13,891 [INFO] speos.experiment (1): Training for Epoch 5
+/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/experiment.py:237: RuntimeWarning: invalid value encountered in scalar divide
+  self.checkpoint_on = 2 * (self.train_precision * self.recall) / (
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,006 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,059 [INFO] speos.experiment (1): Eval Loss: 1.3111540605507377, Accuracy: 0.0, Recall: 0.0, Precision: 0.0, AUROC: nan, AUPRC: 1.0, F1: 0.0, MRR: 0.01959583126559211, MR: 1566.4375, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,060 [INFO] speos.experiment (1): Training for Epoch 6
+/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/experiment.py:237: RuntimeWarning: invalid value encountered in scalar divide
+  self.checkpoint_on = 2 * (self.train_precision * self.recall) / (
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,175 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,228 [INFO] speos.experiment (1): Eval Loss: 1.241899887858576, Accuracy: 0.0, Recall: 0.0, Precision: 0.0, AUROC: nan, AUPRC: 1.0, F1: 0.0, MRR: 0.0692337392725581, MR: 1298.625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,228 [INFO] speos.experiment (1): Training for Epoch 7
+/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/experiment.py:237: RuntimeWarning: invalid value encountered in scalar divide
+  self.checkpoint_on = 2 * (self.train_precision * self.recall) / (
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,343 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,396 [INFO] speos.experiment (1): Eval Loss: 1.1609504766345782, Accuracy: 0.0, Recall: 0.0, Precision: 0.0, AUROC: nan, AUPRC: 1.0, F1: 0.0, MRR: 0.06669092536564221, MR: 943.75, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,397 [INFO] speos.experiment (1): Training for Epoch 8
+/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/experiment.py:237: RuntimeWarning: invalid value encountered in scalar divide
+  self.checkpoint_on = 2 * (self.train_precision * self.recall) / (
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,511 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,565 [INFO] speos.experiment (1): Eval Loss: 1.0831697137519698, Accuracy: 0.0, Recall: 0.0, Precision: 0.0, AUROC: nan, AUPRC: 1.0, F1: 0.0, MRR: 0.07237618444820929, MR: 1202.9375, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,565 [INFO] speos.experiment (1): Training for Epoch 9
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,679 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,732 [INFO] speos.experiment (1): Eval Loss: 1.0099888014105556, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.06839483792327694, MR: 1175.625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,737 [INFO] speos.experiment (1): Training for Epoch 10
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,851 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,905 [INFO] speos.experiment (1): Eval Loss: 0.9406948867891312, Accuracy: 0.25, Recall: 0.25, Precision: 0.999999999975, AUROC: nan, AUPRC: 1.0, F1: 0.4, MRR: 0.07614574700616644, MR: 1424.0625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:14,909 [INFO] speos.experiment (1): Training for Epoch 11
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,024 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,078 [INFO] speos.experiment (1): Eval Loss: 0.9045331515072246, Accuracy: 0.25, Recall: 0.25, Precision: 0.999999999975, AUROC: nan, AUPRC: 1.0, F1: 0.4, MRR: 0.02497917575476025, MR: 1594.4375, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,078 [INFO] speos.experiment (1): Training for Epoch 12
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,193 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,246 [INFO] speos.experiment (1): Eval Loss: 0.869650550601258, Accuracy: 0.25, Recall: 0.25, Precision: 0.999999999975, AUROC: nan, AUPRC: 1.0, F1: 0.4, MRR: 0.02222725427954197, MR: 1854.875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,247 [INFO] speos.experiment (1): Training for Epoch 13
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,361 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,415 [INFO] speos.experiment (1): Eval Loss: 0.8645878125801749, Accuracy: 0.3125, Recall: 0.3125, Precision: 0.99999999998, AUROC: nan, AUPRC: 1.0, F1: 0.47619047619047616, MRR: 0.01910575893465031, MR: 2241.875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,415 [INFO] speos.experiment (1): Training for Epoch 14
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,530 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,583 [INFO] speos.experiment (1): Eval Loss: 0.7993675672174496, Accuracy: 0.375, Recall: 0.375, Precision: 0.9999999999833333, AUROC: nan, AUPRC: 1.0, F1: 0.5454545454545454, MRR: 0.03915716743554718, MR: 2043.375, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,584 [INFO] speos.experiment (1): Training for Epoch 15
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,699 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,753 [INFO] speos.experiment (1): Eval Loss: 0.85224225879677, Accuracy: 0.4375, Recall: 0.4375, Precision: 0.9999999999857143, AUROC: nan, AUPRC: 1.0, F1: 0.6086956521739131, MRR: 0.014775328695917677, MR: 2478.8125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,753 [INFO] speos.experiment (1): Training for Epoch 16
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,868 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,922 [INFO] speos.experiment (1): Eval Loss: 0.8625430716522541, Accuracy: 0.4375, Recall: 0.4375, Precision: 0.9999999999857143, AUROC: nan, AUPRC: 1.0, F1: 0.6086956521739131, MRR: 0.014819541352319002, MR: 2767.8125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:15,922 [INFO] speos.experiment (1): Training for Epoch 17
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,037 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,090 [INFO] speos.experiment (1): Eval Loss: 0.8191925580946002, Accuracy: 0.5625, Recall: 0.5625, Precision: 0.9999999999888889, AUROC: nan, AUPRC: 1.0, F1: 0.72, MRR: 0.04514929129109678, MR: 2534.1875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,090 [INFO] speos.experiment (1): Training for Epoch 18
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,205 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,258 [INFO] speos.experiment (1): Eval Loss: 0.9064224355421164, Accuracy: 0.625, Recall: 0.625, Precision: 0.99999999999, AUROC: nan, AUPRC: 1.0, F1: 0.7692307692307693, MRR: 0.04577418880913646, MR: 3371.75, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,259 [INFO] speos.experiment (1): Training for Epoch 19
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,373 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,427 [INFO] speos.experiment (1): Eval Loss: 0.9810754353206234, Accuracy: 0.625, Recall: 0.625, Precision: 0.99999999999, AUROC: nan, AUPRC: 1.0, F1: 0.7692307692307693, MRR: 0.09640170771670893, MR: 3769.8125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,428 [INFO] speos.experiment (1): Training for Epoch 20
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,543 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,597 [INFO] speos.experiment (1): Eval Loss: 1.0666463169215903, Accuracy: 0.625, Recall: 0.625, Precision: 0.99999999999, AUROC: nan, AUPRC: 1.0, F1: 0.7692307692307693, MRR: 0.1263760001322853, MR: 4182.0, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,597 [INFO] speos.experiment (1): Training for Epoch 21
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,712 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,766 [INFO] speos.experiment (1): Eval Loss: 1.3144542948629707, Accuracy: 0.4375, Recall: 0.4375, Precision: 0.9999999999857143, AUROC: nan, AUPRC: 1.0, F1: 0.6086956521739131, MRR: 0.008244271230765573, MR: 4794.5, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,766 [INFO] speos.experiment (1): Training for Epoch 22
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,880 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,934 [INFO] speos.experiment (1): Eval Loss: 1.8126607136784267, Accuracy: 0.375, Recall: 0.375, Precision: 0.9999999999833333, AUROC: nan, AUPRC: 1.0, F1: 0.5454545454545454, MRR: 0.0008999580443011337, MR: 6902.75, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:16,934 [INFO] speos.experiment (1): Training for Epoch 23
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,049 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,102 [INFO] speos.experiment (1): Eval Loss: 1.4076355419017057, Accuracy: 0.4375, Recall: 0.4375, Precision: 0.9999999999857143, AUROC: nan, AUPRC: 1.0, F1: 0.6086956521739131, MRR: 0.020784412925639116, MR: 4855.25, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,102 [INFO] speos.experiment (1): Training for Epoch 24
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,217 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,271 [INFO] speos.experiment (1): Eval Loss: 1.400252217067129, Accuracy: 0.625, Recall: 0.625, Precision: 0.99999999999, AUROC: nan, AUPRC: 1.0, F1: 0.7692307692307693, MRR: 0.04898200016320747, MR: 4766.5, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,271 [INFO] speos.experiment (1): Training for Epoch 25
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,386 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,439 [INFO] speos.experiment (1): Eval Loss: 1.5288919737385462, Accuracy: 0.5625, Recall: 0.5625, Precision: 0.9999999999888889, AUROC: nan, AUPRC: 1.0, F1: 0.72, MRR: 0.033744858617328864, MR: 4464.25, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,440 [INFO] speos.experiment (1): Training for Epoch 26
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,555 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,608 [INFO] speos.experiment (1): Eval Loss: 1.603945076254468, Accuracy: 0.5625, Recall: 0.5625, Precision: 0.9999999999888889, AUROC: nan, AUPRC: 1.0, F1: 0.72, MRR: 0.028807104165128664, MR: 4182.625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,608 [INFO] speos.experiment (1): Training for Epoch 27
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,723 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,777 [INFO] speos.experiment (1): Eval Loss: 1.6211749730552192, Accuracy: 0.5625, Recall: 0.5625, Precision: 0.9999999999888889, AUROC: nan, AUPRC: 1.0, F1: 0.72, MRR: 0.024736837853964376, MR: 3880.75, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,777 [INFO] speos.experiment (1): Training for Epoch 28
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,891 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,945 [INFO] speos.experiment (1): Eval Loss: 1.686324580229944, Accuracy: 0.5625, Recall: 0.5625, Precision: 0.9999999999888889, AUROC: nan, AUPRC: 1.0, F1: 0.72, MRR: 0.014034412375758084, MR: 3862.4375, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:17,945 [INFO] speos.experiment (1): Training for Epoch 29
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,060 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,113 [INFO] speos.experiment (1): Eval Loss: 2.0587227958898113, Accuracy: 0.4375, Recall: 0.4375, Precision: 0.9999999999857143, AUROC: nan, AUPRC: 1.0, F1: 0.6086956521739131, MRR: 0.006973010191591833, MR: 4398.9375, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,114 [INFO] speos.experiment (1): Training for Epoch 30
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,228 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,282 [INFO] speos.experiment (1): Eval Loss: 2.258721340953099, Accuracy: 0.375, Recall: 0.375, Precision: 0.9999999999833333, AUROC: nan, AUPRC: 1.0, F1: 0.5454545454545454, MRR: 0.00512912240256445, MR: 4625.875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,282 [INFO] speos.experiment (1): Training for Epoch 31
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,396 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,450 [INFO] speos.experiment (1): Eval Loss: 2.5974380802956505, Accuracy: 0.3125, Recall: 0.3125, Precision: 0.99999999998, AUROC: nan, AUPRC: 1.0, F1: 0.47619047619047616, MRR: 0.004545034273943007, MR: 4630.3125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,450 [INFO] speos.experiment (1): Training for Epoch 32
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,565 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,619 [INFO] speos.experiment (1): Eval Loss: 2.6575524202456213, Accuracy: 0.375, Recall: 0.375, Precision: 0.9999999999833333, AUROC: nan, AUPRC: 1.0, F1: 0.5454545454545454, MRR: 0.00498036101475339, MR: 5000.125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,619 [INFO] speos.experiment (1): Training for Epoch 33
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,734 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,787 [INFO] speos.experiment (1): Eval Loss: 2.866033296260781, Accuracy: 0.4375, Recall: 0.4375, Precision: 0.9999999999857143, AUROC: nan, AUPRC: 1.0, F1: 0.6086956521739131, MRR: 0.005374448083321938, MR: 5481.25, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,787 [INFO] speos.experiment (1): Training for Epoch 34
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,902 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,956 [INFO] speos.experiment (1): Eval Loss: 3.5443791913929745, Accuracy: 0.3125, Recall: 0.3125, Precision: 0.99999999998, AUROC: nan, AUPRC: 1.0, F1: 0.47619047619047616, MRR: 0.004637680583708314, MR: 5174.3125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,956 [INFO] speos.experiment (1): Adjusted Learning rate to 0.00033.
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:18,956 [INFO] speos.experiment (1): Training for Epoch 35
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,070 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,124 [INFO] speos.experiment (1): Eval Loss: 3.7157595036915456, Accuracy: 0.3125, Recall: 0.3125, Precision: 0.99999999998, AUROC: nan, AUPRC: 1.0, F1: 0.47619047619047616, MRR: 0.004151614153552715, MR: 6093.8125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,124 [INFO] speos.experiment (1): Training for Epoch 36
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,239 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,293 [INFO] speos.experiment (1): Eval Loss: 3.788631976206424, Accuracy: 0.3125, Recall: 0.3125, Precision: 0.99999999998, AUROC: nan, AUPRC: 1.0, F1: 0.47619047619047616, MRR: 0.003778877436320749, MR: 6062.3125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,293 [INFO] speos.experiment (1): Training for Epoch 37
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,407 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,461 [INFO] speos.experiment (1): Eval Loss: 3.9013236484494485, Accuracy: 0.25, Recall: 0.25, Precision: 0.999999999975, AUROC: nan, AUPRC: 1.0, F1: 0.4, MRR: 0.0032189924429185937, MR: 5985.625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,461 [INFO] speos.experiment (1): Training for Epoch 38
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,576 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,630 [INFO] speos.experiment (1): Eval Loss: 4.282211562485964, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.0022666310784262996, MR: 6015.8125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,630 [INFO] speos.experiment (1): Training for Epoch 39
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,745 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,798 [INFO] speos.experiment (1): Eval Loss: 4.508263915053323, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.0023036220751516344, MR: 6493.125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,798 [INFO] speos.experiment (1): Training for Epoch 40
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,913 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,966 [INFO] speos.experiment (1): Eval Loss: 4.5953174100595895, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.002818686827991717, MR: 6150.75, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:19,967 [INFO] speos.experiment (1): Training for Epoch 41
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,081 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,135 [INFO] speos.experiment (1): Eval Loss: 4.764246145265154, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.0035205142269292807, MR: 5424.1875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,135 [INFO] speos.experiment (1): Training for Epoch 42
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,251 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,304 [INFO] speos.experiment (1): Eval Loss: 4.9386044839977306, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.004088889558311729, MR: 4806.75, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,305 [INFO] speos.experiment (1): Training for Epoch 43
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,419 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,473 [INFO] speos.experiment (1): Eval Loss: 4.943137036316369, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.006252052794611028, MR: 4691.1875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,473 [INFO] speos.experiment (1): Training for Epoch 44
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,588 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,641 [INFO] speos.experiment (1): Eval Loss: 4.906800177997098, Accuracy: 0.1875, Recall: 0.1875, Precision: 0.9999999999666667, AUROC: nan, AUPRC: 1.0, F1: 0.3157894736842105, MRR: 0.007045270294248894, MR: 5138.875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,642 [INFO] speos.experiment (1): Training for Epoch 45
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,756 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,810 [INFO] speos.experiment (1): Eval Loss: 5.015618381719769, Accuracy: 0.1875, Recall: 0.1875, Precision: 0.9999999999666667, AUROC: nan, AUPRC: 1.0, F1: 0.3157894736842105, MRR: 0.007502443841512011, MR: 5636.0625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,810 [INFO] speos.experiment (1): Training for Epoch 46
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,925 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,979 [INFO] speos.experiment (1): Eval Loss: 5.157798244735019, Accuracy: 0.1875, Recall: 0.1875, Precision: 0.9999999999666667, AUROC: nan, AUPRC: 1.0, F1: 0.3157894736842105, MRR: 0.008596452768865217, MR: 5870.75, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:20,979 [INFO] speos.experiment (1): Training for Epoch 47
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,093 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,147 [INFO] speos.experiment (1): Eval Loss: 5.298085320862123, Accuracy: 0.1875, Recall: 0.1875, Precision: 0.9999999999666667, AUROC: nan, AUPRC: 1.0, F1: 0.3157894736842105, MRR: 0.009317536145424585, MR: 5988.0, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,147 [INFO] speos.experiment (1): Training for Epoch 48
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,262 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,315 [INFO] speos.experiment (1): Eval Loss: 5.415665461347917, Accuracy: 0.1875, Recall: 0.1875, Precision: 0.9999999999666667, AUROC: nan, AUPRC: 1.0, F1: 0.3157894736842105, MRR: 0.011320733196406215, MR: 6085.0625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,316 [INFO] speos.experiment (1): Training for Epoch 49
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,430 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,484 [INFO] speos.experiment (1): Eval Loss: 5.600807119460255, Accuracy: 0.1875, Recall: 0.1875, Precision: 0.9999999999666667, AUROC: nan, AUPRC: 1.0, F1: 0.3157894736842105, MRR: 0.011147460942103345, MR: 6232.875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,484 [INFO] speos.experiment (1): Training for Epoch 50
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,600 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,654 [INFO] speos.experiment (1): Eval Loss: 5.7634494329961665, Accuracy: 0.1875, Recall: 0.1875, Precision: 0.9999999999666667, AUROC: nan, AUPRC: 1.0, F1: 0.3157894736842105, MRR: 0.01075631707455467, MR: 6447.875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,654 [INFO] speos.experiment (1): Training for Epoch 51
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,768 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,822 [INFO] speos.experiment (1): Eval Loss: 5.889242567606644, Accuracy: 0.1875, Recall: 0.1875, Precision: 0.9999999999666667, AUROC: nan, AUPRC: 1.0, F1: 0.3157894736842105, MRR: 0.010796496763786637, MR: 6980.625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,822 [INFO] speos.experiment (1): Training for Epoch 52
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,937 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,990 [INFO] speos.experiment (1): Eval Loss: 5.995880775499634, Accuracy: 0.1875, Recall: 0.1875, Precision: 0.9999999999666667, AUROC: nan, AUPRC: 1.0, F1: 0.3157894736842105, MRR: 0.010795186548463087, MR: 7065.4375, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:21,991 [INFO] speos.experiment (1): Training for Epoch 53
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,105 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,158 [INFO] speos.experiment (1): Eval Loss: 6.281153603509786, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.010770666150937051, MR: 7298.3125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,159 [INFO] speos.experiment (1): Training for Epoch 54
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,273 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,326 [INFO] speos.experiment (1): Eval Loss: 6.5005974458360605, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.009427770109467593, MR: 7043.5, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,327 [INFO] speos.experiment (1): Training for Epoch 55
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,441 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,494 [INFO] speos.experiment (1): Eval Loss: 6.818627853089815, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.00720207683572722, MR: 8041.3125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,495 [INFO] speos.experiment (1): Training for Epoch 56
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,609 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,663 [INFO] speos.experiment (1): Eval Loss: 6.976598026452897, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.006548455385203855, MR: 8153.0, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,663 [INFO] speos.experiment (1): Training for Epoch 57
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,778 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,831 [INFO] speos.experiment (1): Eval Loss: 7.142816394764988, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.006513258269109231, MR: 8536.0, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,832 [INFO] speos.experiment (1): Training for Epoch 58
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:22,946 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,000 [INFO] speos.experiment (1): Eval Loss: 7.328357215305491, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.007025097701428417, MR: 8984.6875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,000 [INFO] speos.experiment (1): Training for Epoch 59
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,114 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,168 [INFO] speos.experiment (1): Eval Loss: 7.490116226540419, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.00947448267977822, MR: 9180.25, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,168 [INFO] speos.experiment (1): Training for Epoch 60
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,282 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,336 [INFO] speos.experiment (1): Eval Loss: 7.3184118923767105, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.013961149729675559, MR: 8655.3125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,336 [INFO] speos.experiment (1): Adjusted Learning rate to 0.0001089.
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,336 [INFO] speos.experiment (1): Training for Epoch 61
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,451 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,505 [INFO] speos.experiment (1): Eval Loss: 7.228257646833935, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.014065207415527184, MR: 8627.875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,505 [INFO] speos.experiment (1): Training for Epoch 62
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,619 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,673 [INFO] speos.experiment (1): Eval Loss: 7.266704590170818, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.01406295216420881, MR: 8679.3125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,673 [INFO] speos.experiment (1): Training for Epoch 63
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,788 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,841 [INFO] speos.experiment (1): Eval Loss: 7.293976952127869, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.01721934163892123, MR: 8734.6875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,841 [INFO] speos.experiment (1): Training for Epoch 64
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:23,956 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,009 [INFO] speos.experiment (1): Eval Loss: 7.377804924010476, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.01718621100360506, MR: 8699.375, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,010 [INFO] speos.experiment (1): Training for Epoch 65
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,124 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,177 [INFO] speos.experiment (1): Eval Loss: 7.536072311633035, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.01722029154902219, MR: 8656.0625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,178 [INFO] speos.experiment (1): Training for Epoch 66
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,292 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,346 [INFO] speos.experiment (1): Eval Loss: 7.642577817406003, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.01706926350200565, MR: 8670.875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,346 [INFO] speos.experiment (1): Training for Epoch 67
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,461 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,514 [INFO] speos.experiment (1): Eval Loss: 7.819833893629175, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.015957841945905053, MR: 8918.375, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,515 [INFO] speos.experiment (1): Training for Epoch 68
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,629 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,683 [INFO] speos.experiment (1): Eval Loss: 7.908576428348943, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.012680385961450566, MR: 9451.5, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,683 [INFO] speos.experiment (1): Training for Epoch 69
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,797 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,851 [INFO] speos.experiment (1): Eval Loss: 7.970450165252206, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.0127056812604198, MR: 9932.0, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,851 [INFO] speos.experiment (1): Training for Epoch 70
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:24,965 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,019 [INFO] speos.experiment (1): Eval Loss: 8.023923602496156, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.01064810493635165, MR: 9937.8125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,019 [INFO] speos.experiment (1): Training for Epoch 71
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,134 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,187 [INFO] speos.experiment (1): Eval Loss: 8.062266261159278, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.010663018436358297, MR: 9825.875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,187 [INFO] speos.experiment (1): Training for Epoch 72
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,302 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,355 [INFO] speos.experiment (1): Eval Loss: 8.088117947005074, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.010662228979163926, MR: 9706.625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,356 [INFO] speos.experiment (1): Training for Epoch 73
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,470 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,524 [INFO] speos.experiment (1): Eval Loss: 8.118877920839033, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.01065568805024132, MR: 9699.1875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,524 [INFO] speos.experiment (1): Training for Epoch 74
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,639 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,692 [INFO] speos.experiment (1): Eval Loss: 8.150492696269055, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.01273159295979811, MR: 9752.0, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,692 [INFO] speos.experiment (1): Training for Epoch 75
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,807 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,860 [INFO] speos.experiment (1): Eval Loss: 8.174019373963654, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.012717743346168958, MR: 9812.75, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,861 [INFO] speos.experiment (1): Training for Epoch 76
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:25,975 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,029 [INFO] speos.experiment (1): Eval Loss: 8.189000695408106, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.01582646080702543, MR: 9754.5, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,029 [INFO] speos.experiment (1): Training for Epoch 77
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,144 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,197 [INFO] speos.experiment (1): Eval Loss: 8.191109569750928, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.015818548345017617, MR: 9393.3125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,198 [INFO] speos.experiment (1): Training for Epoch 78
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,312 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,366 [INFO] speos.experiment (1): Eval Loss: 8.178643220218312, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.015838362731389, MR: 9038.1875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,366 [INFO] speos.experiment (1): Training for Epoch 79
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,480 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,534 [INFO] speos.experiment (1): Eval Loss: 8.178348274351574, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.015997776874062744, MR: 9004.875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,534 [INFO] speos.experiment (1): Training for Epoch 80
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,649 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,702 [INFO] speos.experiment (1): Eval Loss: 8.160344926948165, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.016481826698902587, MR: 8919.0, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,703 [INFO] speos.experiment (1): Training for Epoch 81
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,817 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,871 [INFO] speos.experiment (1): Eval Loss: 8.141780516093252, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.016964528602401545, MR: 8815.5, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,871 [INFO] speos.experiment (1): Training for Epoch 82
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:26,985 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,039 [INFO] speos.experiment (1): Eval Loss: 8.09596061749672, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.014254296740965268, MR: 8746.8125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,039 [INFO] speos.experiment (1): Training for Epoch 83
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,154 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,207 [INFO] speos.experiment (1): Eval Loss: 7.989457925876556, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.01495928186583702, MR: 8681.375, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,208 [INFO] speos.experiment (1): Training for Epoch 84
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,322 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,376 [INFO] speos.experiment (1): Eval Loss: 7.884208143791471, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.018607557955238, MR: 8662.75, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,376 [INFO] speos.experiment (1): Training for Epoch 85
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,491 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,544 [INFO] speos.experiment (1): Eval Loss: 7.868354276819408, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.0187401562428866, MR: 8696.125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,545 [INFO] speos.experiment (1): Training for Epoch 86
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,659 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,713 [INFO] speos.experiment (1): Eval Loss: 7.876127666265347, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.019051094474246476, MR: 8838.0, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,713 [INFO] speos.experiment (1): Adjusted Learning rate to 0.0001.
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,713 [INFO] speos.experiment (1): Training for Epoch 87
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,828 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,881 [INFO] speos.experiment (1): Eval Loss: 7.895216608587471, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.01966418040356614, MR: 9028.375, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,881 [INFO] speos.experiment (1): Training for Epoch 88
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:27,996 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,050 [INFO] speos.experiment (1): Eval Loss: 7.9148546022239055, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.01965792864577047, MR: 9163.0625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,050 [INFO] speos.experiment (1): Training for Epoch 89
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,164 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,218 [INFO] speos.experiment (1): Eval Loss: 7.9396700206348, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.01965486051694814, MR: 9303.4375, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,218 [INFO] speos.experiment (1): Training for Epoch 90
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,332 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,386 [INFO] speos.experiment (1): Eval Loss: 7.967752871114499, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.019663546376800997, MR: 9465.1875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,386 [INFO] speos.experiment (1): Training for Epoch 91
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,501 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,554 [INFO] speos.experiment (1): Eval Loss: 7.998691511969948, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.01944176858876687, MR: 9527.625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,554 [INFO] speos.experiment (1): Training for Epoch 92
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,669 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,722 [INFO] speos.experiment (1): Eval Loss: 8.028298049948063, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.01945610553085307, MR: 9477.4375, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,722 [INFO] speos.experiment (1): Training for Epoch 93
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,837 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,890 [INFO] speos.experiment (1): Eval Loss: 8.058985017264293, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.01996342210319085, MR: 9364.1875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:28,891 [INFO] speos.experiment (1): Training for Epoch 94
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,005 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,058 [INFO] speos.experiment (1): Eval Loss: 8.085323009925904, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.019975691629985557, MR: 9255.75, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,059 [INFO] speos.experiment (1): Training for Epoch 95
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,173 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,226 [INFO] speos.experiment (1): Eval Loss: 8.115681937287846, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.020279864051831884, MR: 9195.0, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,227 [INFO] speos.experiment (1): Training for Epoch 96
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,341 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,394 [INFO] speos.experiment (1): Eval Loss: 8.13744291723666, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.03625468856211872, MR: 9156.6875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,394 [INFO] speos.experiment (1): Training for Epoch 97
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,509 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,563 [INFO] speos.experiment (1): Eval Loss: 8.150352210368803, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.03626307781424222, MR: 9119.0625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,563 [INFO] speos.experiment (1): Training for Epoch 98
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,677 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,731 [INFO] speos.experiment (1): Eval Loss: 8.160006974305661, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.03627043880425024, MR: 9026.75, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,731 [INFO] speos.experiment (1): Training for Epoch 99
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,845 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,899 [INFO] speos.experiment (1): Eval Loss: 8.182537781933892, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.03628497373614374, MR: 8976.1875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:29,899 [INFO] speos.experiment (1): Training for Epoch 100
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,015 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,069 [INFO] speos.experiment (1): Eval Loss: 8.202843498235675, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.0363029429343421, MR: 8917.3125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,069 [INFO] speos.experiment (1): Training for Epoch 101
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,184 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,238 [INFO] speos.experiment (1): Eval Loss: 8.216116637367533, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.03632866369876748, MR: 8811.5625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,238 [INFO] speos.experiment (1): Training for Epoch 102
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,352 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,406 [INFO] speos.experiment (1): Eval Loss: 8.231747720944789, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.036358200664379205, MR: 8755.3125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,406 [INFO] speos.experiment (1): Training for Epoch 103
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,521 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,574 [INFO] speos.experiment (1): Eval Loss: 8.247444916183191, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.03725682414555023, MR: 8702.1875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,575 [INFO] speos.experiment (1): Training for Epoch 104
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,689 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,742 [INFO] speos.experiment (1): Eval Loss: 8.31382132583883, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.036380402773956454, MR: 8846.375, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,743 [INFO] speos.experiment (1): Training for Epoch 105
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,857 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,911 [INFO] speos.experiment (1): Eval Loss: 8.383144969535502, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.03603263713332599, MR: 8928.1875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:30,911 [INFO] speos.experiment (1): Training for Epoch 106
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,025 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,079 [INFO] speos.experiment (1): Eval Loss: 8.462519658833687, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.03635320361686139, MR: 8927.8125, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,079 [INFO] speos.experiment (1): Training for Epoch 107
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,193 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,247 [INFO] speos.experiment (1): Eval Loss: 8.498511916555476, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.03601264070800275, MR: 8905.5625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,247 [INFO] speos.experiment (1): Training for Epoch 108
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,361 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,415 [INFO] speos.experiment (1): Eval Loss: 8.495976867442522, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.036046355984075934, MR: 8869.875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,415 [INFO] speos.experiment (1): Training for Epoch 109
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,530 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,584 [INFO] speos.experiment (1): Eval Loss: 8.48884858038129, Accuracy: 0.0625, Recall: 0.0625, Precision: 0.9999999999, AUROC: nan, AUPRC: 1.0, F1: 0.11764705882352941, MRR: 0.02641011280831425, MR: 8797.875, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,584 [INFO] speos.experiment (1): Training for Epoch 110
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,698 [INFO] speos.experiment (1): target is val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,752 [INFO] speos.experiment (1): Eval Loss: 8.469424459332973, Accuracy: 0.125, Recall: 0.125, Precision: 0.99999999995, AUROC: nan, AUPRC: 1.0, F1: 0.2222222222222222, MRR: 0.026462157102667402, MR: 8713.625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,752 [INFO] speos.experiment (1): Reached Early Stopping Criterion at epoch 110, aborting training
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,759 [INFO] speos.experiment (1): Rolled back model to epoch 10 with value 0.3999999999984
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:31,928 [INFO] speos.experiment (1): Eval Loss: 0.13012611621911252, Accuracy: 0.9958260869565217, Recall: 0.4166666666666667, Precision: 0.4032258064509625, AUROC: 0.9885912352142718, AUPRC: 0.4246922501792759, F1: 0.4098360655737705, MRR: 0.14435966039823359, MR: 197.11666666666667, Target: train
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:32,289 [INFO] speos.experiment (1): Eval Loss: 0.9406948867891312, Accuracy: 0.25, Recall: 0.25, Precision: 0.999999999975, AUROC: nan, AUPRC: 1.0, F1: 0.4, MRR: 0.07614574700616644, MR: 1424.0625, Target: val
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:32,394 [INFO] speos.experiment (1): Eval Loss: 0.9869197081856175, Accuracy: 0.1875, Recall: 0.1875, Precision: 0.9999999999666667, AUROC: nan, AUPRC: 1.0, F1: 0.3157894736842105, MRR: 0.07121407454697519, MR: 2006.25, Target: test
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:32,542 [INFO] speos.experiment (1): Eval Loss: 0.13685787102790956, Accuracy: 0.9943872237009606, Recall: 0.34782608695652173, Precision: 0.46376811594135686, AUROC: 0.9578749019905405, AUPRC: 0.3816515582811851, F1: 0.39751552795031053, MRR: 0.11977539966026393, MR: 725.1304347826087, Target: all
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,815 [INFO] speos.experiment: Starting run Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,815 [INFO] speos.experiment: Cuda is available: True
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,815 [INFO] speos.experiment: Using device(s): ['cuda:0']
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,816 [INFO] speos.preprocessing.preprocessor: Using Adjacency matrices: ['covaries', 'pathway']
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,816 [INFO] speos.preprocessing.preprocessor: Using 1 mappings with ground truth gt_cp 
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,817 [INFO] speos.preprocessing.preprocessor: Using 1 additional node data sources: ['ChildExpression']
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,817 [INFO] speos.preprocessing.preprocessor: Using 2 additional node data sources: ['ChildExpression', 'PrebirthExpression']
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,817 [INFO] speos.preprocessing.preprocessor: Using 3 additional node data sources: ['ChildExpression', 'PrebirthExpression', 'PubmedDoc2Vec2022']
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,818 [INFO] speos.preprocessing.datasets: Loading Processed Data from ./data/processed/Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1.pt
+/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/torch_geometric/data/in_memory_dataset.py:284: UserWarning: It is not recommended to directly access the internal storage format `data` of an 'InMemoryDataset'. If you are absolutely certain what you are doing, access the internal storage via `InMemoryDataset._data` instead to suppress this warning. Alternatively, you can access stacked individual attributes of every graph via `dataset.{attr_name}`.
+  warnings.warn(msg)
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,953 [INFO] speos.preprocessing.datasets: HeteroData(
+  x=[17282, 782],
+  y=[17282],
+  train_mask=[17282],
+  test_mask=[17282],
+  val_mask=[17282],
+  gene={ x=[17282, 782] },
+  (gene, covaries, gene)={ edge_index=[2, 82764] },
+  (gene, pathway, gene)={ edge_index=[2, 9130786] }
+)
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,953 [INFO] speos.experiment: Cuda is available: True
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,970 [INFO] speos.experiment: RelationalGeneNetwork(
+  (pre_mp): Sequential(
+    (0): Linear(782, 50, bias=True)
+    (1): ELU(alpha=1.0)
+    (2): Linear(50, 50, bias=True)
+    (3): ELU(alpha=1.0)
+    (4): Linear(50, 50, bias=True)
+    (5): ELU(alpha=1.0)
+    (6): Linear(50, 50, bias=True)
+    (7): ELU(alpha=1.0)
+    (8): Linear(50, 50, bias=True)
+    (9): ELU(alpha=1.0)
+    (10): Linear(50, 50, bias=True)
+    (11): ELU(alpha=1.0)
+  )
+  (post_mp): Sequential(
+    (0): Linear(50, 50, bias=True)
+    (1): ELU(alpha=1.0)
+    (2): Linear(50, 50, bias=True)
+    (3): ELU(alpha=1.0)
+    (4): Linear(50, 50, bias=True)
+    (5): ELU(alpha=1.0)
+    (6): Linear(50, 50, bias=True)
+    (7): ELU(alpha=1.0)
+    (8): Linear(50, 50, bias=True)
+    (9): ELU(alpha=1.0)
+    (10): Linear(50, 25, bias=True)
+    (11): ELU(alpha=1.0)
+    (12): Linear(25, 1, bias=True)
+  )
+  (mp): Sequential(
+    (0) - FiLMConv(50, 50, num_relations=2): x, edge_index -> x
+    (1) - ELU(alpha=1.0): x -> x
+    (2) - InstanceNorm(50): x -> x
+    (3) - FiLMConv(50, 50, num_relations=2): x, edge_index -> x
+    (4) - ELU(alpha=1.0): x -> x
+    (5) - InstanceNorm(50): x -> x
+  )
+)
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,971 [INFO] speos.experiment: Cuda is available: True
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,976 [INFO] speos.experiment: Using existing ResultsHandler pointing to ./results/Rev_cp_KIGNN-DOC2VEC_s1.h5
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,976 [INFO] speos.experiment: Received data with 60 train positives, 17190 train negatives, 16 val positives, 0 val negatives, 16 test positives and 0 test negatives
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:37,977 [INFO] speos.experiment: Cuda is available: True
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:38,660 [INFO] speos.experiment: Writing TensoBoard data to ./inference/Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:38,664 [INFO] speos.experiment: Restoring trained Model for Inference
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:38,667 [INFO] speos.experiment: Restored trained Model at Epoch 10 with Value 0.3999999999984
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:38,667 [INFO] speos.experiment: Starting Inference.
+Traceback (most recent call last):
+  File "/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/torch/serialization.py", line 629, in save
+    _save(obj, opened_zipfile, pickle_module, pickle_protocol, _disable_byteorder_record)
+  File "/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/torch/serialization.py", line 863, in _save
+    zip_file.write_record(name, storage.data_ptr(), num_bytes)
+RuntimeError: [enforce fail at inline_container.cc:764] . PytorchStreamWriter failed writing file data/0: file write failed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/outer_crossval.py", line 12, in <module>
+    pipeline.run()
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/pipeline.py", line 84, in run
+    self.crossval.run()
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/wrappers.py", line 279, in run
+    self.inner_cv.run()
+  File "/data/gpfs/projects/punim0512/chathura_projects/KIML/external/SPEOS/speos/wrappers.py", line 171, in run
+    torch.save(data, os.path.join(path, name_pt))
+  File "/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/torch/serialization.py", line 628, in save
+    with _open_zipfile_writer(f) as opened_zipfile:
+  File "/home/culuwitikega/.conda/envs/speos_kiml/lib/python3.10/site-packages/torch/serialization.py", line 476, in __exit__
+    self.file_like.write_end_of_file()
+RuntimeError: [enforce fail at inline_container.cc:595] . unexpected pos 1728 vs 1622
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:40,818 [INFO] speos.experiment: Eval Loss: 0.1376871508620899, Accuracy: 0.9943872237009606, Recall: 0.34782608695652173, Precision: 0.46376811594135686, AUROC: 0.9578749019905405, AUPRC: 0.3816515582811851, F1: 0.39751552795031053, MRR: 0.11977539966026393, MR: 725.1304347826087, Target: all
+Rev_cp_KIGNN-DOC2VEC_s1_outer_0_fold_1 2026-10-21 17:46:40,844 [INFO] speos.experiment: Writing Inference data to ./results/Rev_cp_KIGNN-DOC2VEC_s1.h5
+Rev_cp_KIGNN-DOC2VEC_s1 2026-10-21 17:46:42,302 [INFO] speos.wrappers (cv): Starting Inner Split 2
