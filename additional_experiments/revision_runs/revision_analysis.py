@@ -280,6 +280,10 @@ ABLATION_CONTRASTS = [
     ("GNN-KG", "GNN (rerun)"),         # swap to knowledge graph, expression only
     ("KI-GNN (rerun)", "KIGNN-PPI"),   # swap to knowledge graph, both feature sets
     ("KIMLP", "KI-GNN (rerun)"),       # remove message passing entirely (R1.5e)
+    # R1.4: identical to KI-GNN except the literature representation.
+    ("KIGNN-TFIDF", "KI-GNN (rerun)"),
+    ("KIGNN-TFIDF-TITLE", "KI-GNN (rerun)"),
+    ("KIGNN-DOC2VEC", "KI-GNN (rerun)"),
     # Reproduction checks: same config, different run, no torch.manual_seed.
     ("GNN (rerun)", "GNN"),
     ("KI-GNN (rerun)", "KI-GNN"),

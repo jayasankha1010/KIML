@@ -73,7 +73,18 @@ fi
 
 # Config name encodes the disease, which evaluate_results.py needs separately.
 # Rev_<disease>_<variant>_s<seed>  ->  <disease>
-DATASET=$(echo "$EXP_NAME" | sed -E 's/^Rev_(.+)_[A-Za-z-]+_s[0-9]+$/\1/')
+#
+# The variant class must allow DIGITS: KIGNN-DOC2VEC contains a "2", and with
+# [A-Za-z-]+ the pattern simply failed to match, so sed passed the whole config
+# name through and evaluate_results.py died with "Unknown disease:
+# Rev_dee_KIGNN-DOC2VEC_s1". Training and summarisation had already succeeded,
+# so the failure was silent until the very last step.
+DATASET=$(echo "$EXP_NAME" | sed -E 's/^Rev_(.+)_[A-Za-z0-9-]+_s[0-9]+$/\1/')
+if [ "$DATASET" = "$EXP_NAME" ]; then
+    echo "[Error] Could not extract a disease from '$EXP_NAME'."
+    echo "        Expected Rev_<disease>_<variant>_s<seed>."
+    exit 1
+fi
 
 echo "========================================"
 echo " KIML revision run"

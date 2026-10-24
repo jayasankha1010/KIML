@@ -1,0 +1,9 @@
+disease	n_common_targets	ToppGene_median	ToppGene_universe	ToppGene_percentile	SPEOS_median	SPEOS_universe	SPEOS_percentile	Mantis_median	Mantis_universe	Mantis_percentile	KI-GNN_median	KI-GNN_universe	KI-GNN_percentile	KI-RF_median	KI-RF_universe	KI-RF_percentile	best_existing	KI-GNN_vs_best_existing	KI-GNN_vs_best_existing_lo	KI-GNN_vs_best_existing_hi	KI-GNN_vs_best_existing_significant	KI-RF_vs_best_existing	KI-RF_vs_best_existing_lo	KI-RF_vs_best_existing_hi	KI-RF_vs_best_existing_significant
+ad_dee	63	2444	15337	0.1594	1294	17020	0.076	719	18348	0.0392	1114	17020	0.0655	756	18348	0.0412	Mantis	395.0	-67.0	1223.0	False	37.0	-171.0	225.0	False
+ar_dee	46	3005	15165	0.1982	4771	16843	0.2833	1777	18165	0.0978	1718	16843	0.102	1624	18165	0.0894	Mantis	23.5	-777.0	1963.5	False	-105.0	-783.0	780.5	False
+arthrogryposis	22	2103	15428	0.1363	6948	17108	0.4061	3436	18455	0.1862	2198	17108	0.1285	2471	18455	0.1339	ToppGene	-51.0	-2276.0	2075.0	False	440.0	-1415.5	1483.0	False
+cp	226	1493	15508	0.0963	3338	17190	0.1942	1918	18537	0.1035	1036	17190	0.0603	1463	18537	0.0789	ToppGene	-448.5	-991.0	-84.0	True	-32.5	-728.0	523.0	False
+dee	191	2111	14868	0.142	2934	16546	0.1773	1961	17900	0.1096	1392	16546	0.0841	1201	16546	0.0726	Mantis	-569.0	-1212.0	144.0	False	-760.0	-1335.0	-119.0	True
+intellectual_disability	211	3014	13724	0.2196	2907	15359	0.1893	2130	16735	0.1273	3843	15359	0.2502	2791	16735	0.1668	Mantis	1713.0	817.0	2341.0	True	661.0	-51.0	1241.0	False
+microcephaly	41	4220	15342	0.2751	4673	17016	0.2746	3378	18363	0.184	3701	17015	0.2175	2672	18363	0.1455	Mantis	323.0	-1359.0	1759.0	False	-706.0	-2162.0	765.0	False
+mnd	7	738	15533	0.0475	3936	17216	0.2286	5305	18560	0.2858	407	17216	0.0236	669	18560	0.036	ToppGene	-331.0	-10228.0	4950.0	False	-69.0	-7034.0	540.0	False

@@ -46,13 +46,21 @@ import csv
 import os
 import sys
 
+import warnings
+
 import numpy as np
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import KFold
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+
+# The diseases with few positives do not converge within any sensible budget;
+# that is expected for an untuned directional control, so do not emit thousands
+# of warnings about it.
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
@@ -85,7 +93,7 @@ FEATURE_SETS = {
 }
 
 
-def boosting_model(seed):
+def boosting_model(seed, n_jobs=-1):
     """XGBoost if installed, else sklearn's equivalent histogram booster.
 
     R1.3 names XGBoost specifically, so use it when available and say so in the
@@ -95,27 +103,34 @@ def boosting_model(seed):
     try:
         from xgboost import XGBClassifier
         return "XGBoost", XGBClassifier(
-            n_estimators=300, eval_metric="logloss", random_state=seed, n_jobs=-1)
+            n_estimators=300, eval_metric="logloss", random_state=seed, n_jobs=n_jobs)
     except ImportError:
         return ("Gradient boosting",
                 HistGradientBoostingClassifier(random_state=seed))
 
 
-def models(seed):
-    """Plain, untuned classifiers. Defaults except for class balancing."""
-    boosting_name, boosting = boosting_model(seed)
+def models(seed, n_jobs=-1):
+    """Plain, untuned classifiers. Defaults except for class balancing.
+
+    n_jobs is exposed because the tree models default to one worker per core;
+    running two feature sets concurrently on the same machine oversubscribes it
+    badly. Iteration caps are modest on purpose - these models are a
+    directional control, and the diseases with few positives do not converge
+    within any reasonable budget, so a high cap only wastes time.
+    """
+    boosting_name, boosting = boosting_model(seed, n_jobs)
     return {
         "Logistic regression": make_pipeline(
             StandardScaler(),
-            LogisticRegression(max_iter=2000, class_weight="balanced",
+            LogisticRegression(max_iter=500, class_weight="balanced",
                                random_state=seed)),
         "Random forest": RandomForestClassifier(
-            n_estimators=300, class_weight="balanced", n_jobs=-1,
+            n_estimators=300, class_weight="balanced", n_jobs=n_jobs,
             random_state=seed),
         boosting_name: boosting,
         "MLP": make_pipeline(
             StandardScaler(),
-            MLPClassifier(hidden_layer_sizes=(50, 50), max_iter=400,
+            MLPClassifier(hidden_layer_sizes=(50, 50), max_iter=150,
                           random_state=seed)),
     }
 
@@ -174,6 +189,9 @@ def main():
                              "expression files - run align_to_speos_symbols.py first.")
     parser.add_argument("--hl-label", default=None,
                         help="name for the HL representation in the output")
+    parser.add_argument("--n-jobs", type=int, default=-1,
+                        help="worker count for the tree models; set to a small "
+                             "number when running several arms at once")
     parser.add_argument("--folds", type=int, default=5)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--n-boot", type=int, default=2000)
@@ -207,7 +225,7 @@ def main():
         for feature_name, (genes, X) in loaded.items():
             is_positive = np.array([g in positives for g in genes])
 
-            for model_name, model in models(args.seed).items():
+            for model_name, model in models(args.seed, args.n_jobs).items():
                 factory = (lambda m=model: __import__("sklearn").base.clone(m))
                 scores, unlabelled_idx = out_of_fold_scores(
                     X, is_positive, factory, args.folds, args.seed)

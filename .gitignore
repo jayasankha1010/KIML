@@ -231,6 +231,16 @@ external/Mantis/work/
 # PubMed corpus on Spartan via additional_experiments/text_representations/.
 # Transfer these with rsync rather than git - see that directory's README.
 additional_experiments/text_representations/*.txt
+# Raw ToppGene web exports: 50 MB across 12 files, 21 columns of which we use
+# two. These were produced by hand and are NOT script-regenerable, so the Rank
+# and GeneSymbol columns are extracted to other_prioritizers/toppgene_rankings.tsv
+# (3.8 MB, verified identical) and that file IS tracked. Keep the raw exports
+# backed up outside git.
+additional_experiments/other_prioritizers/toppgene/*.csv
+# Count-based node features, same convention. These two are only ~0.6 MB, but
+# they regenerate in seconds from popularity/pubmed_counts_2022_09.tsv, which
+# is tracked - see build_count_features.py for the two commands.
+additional_experiments/fusion/*.txt
 # Per-gene prediction files copied back from cluster runs. Small individually
 # (~600 KB) but there are dozens, and they are reproducible from the run logs.
 additional_experiments/revision_runs/paper_predictions/*.tsv

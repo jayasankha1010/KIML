@@ -33,3 +33,9 @@ dee	KI-GNN (rerun)			Rev_dee_KIGNN_s1	ablation (new run)	paper_predictions/Rev_d
 dee	KIMLP			Rev_dee_KIMLP_s1	ablation (new run)	paper_predictions/Rev_dee_KIMLP_s1_probabilities.tsv
 cp	KI-GNN (rerun)			Rev_cp_KIGNN_s1	ablation (new run)	paper_predictions/Rev_cp_KIGNN_s1_probabilities.tsv
 cp	KIMLP			Rev_cp_KIMLP_s1	ablation (new run)	paper_predictions/Rev_cp_KIMLP_s1_probabilities.tsv
+intellectual_disability	KI-GNN (rerun)			Rev_intellectual_disability_KIGNN_s1	ablation (new run)	paper_predictions/Rev_intellectual_disability_KIGNN_s1_probabilities.tsv
+intellectual_disability	KIMLP			Rev_intellectual_disability_KIMLP_s1	ablation (new run)	paper_predictions/Rev_intellectual_disability_KIMLP_s1_probabilities.tsv
+cp	GNN (rerun)			Rev_cp_GNN_s1	ablation (new run)	paper_predictions/Rev_cp_GNN_s1_probabilities.tsv
+cp	GNN-KG			Rev_cp_GNN-KG_s1	ablation (new run)	paper_predictions/Rev_cp_GNN-KG_s1_probabilities.tsv
+cp	KIGNN-PPI			Rev_cp_KIGNN-PPI_s1	ablation (new run)	paper_predictions/Rev_cp_KIGNN-PPI_s1_probabilities.tsv
+dee	KIGNN-TFIDF			Rev_dee_KIGNN-TFIDF_s1	ablation (new run)	paper_predictions/Rev_dee_KIGNN-TFIDF_s1_probabilities.tsv

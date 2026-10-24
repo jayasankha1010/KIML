@@ -1,0 +1,28 @@
+disease	arm	rf_published_fe1	rf_corrected_fe1	gnn_fe1
+DEE	LL	6.2835	10.3448	7.2917
+DEE	HL	3.3716	3.8314	6.25
+DEE	LL+HL	7.5	10.4167	7.8125
+AD DEE	LL	11.7808	19.1781	15.625
+AD DEE	HL	4.9315	15.0685	3.125
+AD DEE	LL+HL	12.0548	20.5479	20.3125
+AR DEE	LL	6.6667	2.0833	2.1739
+AR DEE	HL	4.1667	6.25	2.1739
+AR DEE	LL+HL	6.6667	4.1667	10.8696
+Microcephaly	LL	4.5833	6.25	2.1739
+Microcephaly	HL	2.5	6.25	0
+Microcephaly	LL+HL	2.9167	4.1667	0
+Intellectual Disability	LL	4.5267	8.2305	3.6199
+Intellectual Disability	HL	1.4815	0.823	0.4525
+Intellectual Disability	LL+HL	3.786	3.7037	1.81
+Motor Neuron Disease	LL	2.8571	0	0
+Motor Neuron Disease	HL	8.5714	28.5714	28.5714
+Motor Neuron Disease	LL+HL	14.2857	28.5714	28.5714
+Cerebral Palsy	LL	6.3248	10.2564	3.8627
+Cerebral Palsy	HL	6.4957	10.2564	12.8755
+Cerebral Palsy	LL+HL	7.7778	13.6752	14.5923
+Bleeding  and Platelet Disorder	LL	12.5	50	
+Bleeding  and Platelet Disorder	HL	12.5	37.5	53.3333
+Bleeding  and Platelet Disorder	LL+HL	16.25	50	53.3333
+Arthrogryposis	LL	3.3333	4.1667	0
+Arthrogryposis	HL	6.6667	25	22.7273
+Arthrogryposis	LL+HL	5	16.6667	22.7273
