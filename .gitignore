@@ -231,6 +231,10 @@ external/Mantis/work/
 # PubMed corpus on Spartan via additional_experiments/text_representations/.
 # Transfer these with rsync rather than git - see that directory's README.
 additional_experiments/text_representations/*.txt
+# Per-checkout scratch: pip cache and TMPDIR for cluster jobs, created by
+# run_revision.slurm. Lives beside the checkout so the repo can move between
+# project allocations without temp files still landing on the old filesystem.
+.scratch/
 # Raw ToppGene web exports: 50 MB across 12 files, 21 columns of which we use
 # two. These were produced by hand and are NOT script-regenerable, so the Rank
 # and GeneSymbol columns are extracted to other_prioritizers/toppgene_rankings.tsv

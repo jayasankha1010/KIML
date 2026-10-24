@@ -29,6 +29,10 @@
 #
 # 3. Set --time and --array accordingly, then submit the rest.
 #
+# Default allocation. Override per submission without editing this file:
+#   sbatch --account=punim2353 --array=... run_revision.slurm
+# The account charges compute and is independent of where the checkout lives,
+# so it must be set to match whichever allocation you are entitled to use.
 #SBATCH --account=punim0512
 #SBATCH --job-name=kiml_rev
 # Comma-separated list: SLURM schedules on whichever becomes free first, which
@@ -101,11 +105,37 @@ module load CUDA/12.2.0
 # an Lmod error over the log.
 module load web_proxy 2>/dev/null || echo "[info] web_proxy module unavailable; continuing"
 
-export PIP_CACHE_DIR=/data/gpfs/projects/punim0512/pip_cache
-export TMPDIR=/data/gpfs/projects/punim0512/pip_cache
-mkdir -p "$PIP_CACHE_DIR"
+# Scratch lives NEXT TO THE CHECKOUT, not at a hardcoded project path.
+#
+# These used to point at /data/gpfs/projects/punim0512/pip_cache. That survives
+# a move of the repository, which is exactly the problem: TMPDIR would still
+# write to the old project, so relocating the checkout to escape a full
+# filesystem would gain nothing and jobs would keep dying with
+# "PytorchStreamWriter ... file write failed".
+#
+# SLURM_SUBMIT_DIR is the directory sbatch was run from, which this script
+# already assumes is the repository root (it does `cd external/SPEOS` below).
+# Deriving from it means the checkout can live under any project allocation
+# with no edit. Override KIML_SCRATCH to put scratch elsewhere.
+KIML_ROOT="${SLURM_SUBMIT_DIR:-$PWD}"
+: "${KIML_SCRATCH:=${KIML_ROOT}/.scratch}"
+export PIP_CACHE_DIR="${KIML_SCRATCH}/pip_cache"
+export TMPDIR="${KIML_SCRATCH}/tmp"
+mkdir -p "$PIP_CACHE_DIR" "$TMPDIR" || {
+    echo "[Error] Cannot create scratch under ${KIML_SCRATCH}."
+    echo "        Check the filesystem is writable and not out of quota:"
+    echo "          check_project_usage"
+    exit 1
+}
+echo "[info] scratch: ${KIML_SCRATCH}"
 
-export CONDA_ENVS_PATH=/data/gpfs/projects/punim0512/anaconda3/envs
+# Only prepend the shared env directory if it actually exists. On other project
+# allocations the environment lives in $HOME/.conda/envs and conda finds it
+# unaided; pointing CONDA_ENVS_PATH at a missing directory just hides the env.
+SHARED_ENVS=/data/gpfs/projects/punim0512/anaconda3/envs
+if [ -d "$SHARED_ENVS" ]; then
+    export CONDA_ENVS_PATH="$SHARED_ENVS"
+fi
 eval "$(conda shell.bash hook)"
 
 if ! conda info --envs | grep -E -q "\b$ENV_NAME\b"; then
