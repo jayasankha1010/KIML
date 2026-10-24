@@ -78,11 +78,39 @@ VARIANTS = {
     "GNN": ("./extensions/datasets_ll.json", PPI, "GeneNetwork", 2),
     "CGNN": ("./extensions/datasets_hl.json", KG, "GeneNetwork", 2),
     "KIGNN": ("./extensions/datasets.json", KG, "GeneNetwork", 2),
-    # R1.5b: separate the node-feature contribution from the knowledge-graph-edge
-    # contribution, instead of changing both at once as KIGNN vs GNN does.
-    # With GNN and KIGNN these complete a 2x2 over {features} x {graph}.
+    # R1.5b. IMPORTANT: in the manuscript's framing the graph is not a separate
+    # axis - PPI edges are part of LL (experimentally derived) and the KG edges
+    # are part of HL (expert-curated). The published arms therefore pair them:
+    #
+    #     GNN     = LL features (expression) + LL graph (PPI)
+    #     CGNN    = HL features (PubMed)     + HL graph (KG)
+    #     KIGNN   = LL + HL features         + HL graph (KG)
+    #
+    # The variants below DELIBERATELY BREAK that pairing. That is the whole
+    # point of the comment: "PubMed node features versus KG edges within
+    # KI-GNN" cannot be answered while features and edges move together, so we
+    # need the off-diagonal cells even though they are not configurations
+    # anyone would ship.
+    #
+    #            PPI edges    KG edges
+    #     LL     GNN          GNN-KG
+    #     HL     CGNN-PPI     CGNN
+    #     LL+HL  KIGNN-PPI    KIGNN
+    #
+    # CGNN-PPI was the missing cell: without it the HL row exists only on the
+    # KG, so we cannot ask whether the literature features need the knowledge
+    # graph specifically or would do as well on any graph.
+    #
+    # Note the asymmetry these cells expose: KIGNN combines LL and HL FEATURES
+    # but keeps only the HL GRAPH, so it drops the PPI edges that are part of
+    # LL. See KIGNN-BOTH below.
     "KIGNN-PPI": ("./extensions/datasets.json", PPI, "GeneNetwork", 2),
     "GNN-KG": ("./extensions/datasets_ll.json", KG, "GeneNetwork", 2),
+    "CGNN-PPI": ("./extensions/datasets_hl.json", PPI, "GeneNetwork", 2),
+    # The configuration the published design skips: LL+HL features over BOTH
+    # graphs. If PPI belongs to LL and KG to HL, this - not KIGNN - is the
+    # consistent "everything" arm, and KIGNN is missing half its LL input.
+    "KIGNN-BOTH": ("./extensions/datasets.json", PPI + KG, "GeneNetwork", 2),
     # R1.5e: "GNN message passing versus a non-graph model using exactly the
     # same node features". Setting mp.n_layers to 0 leaves mp_list empty, so
     # GeneNetwork sets self.mp = None and forward() reduces to pre_mp ->
