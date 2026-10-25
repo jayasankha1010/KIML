@@ -34,7 +34,12 @@
 
 set -u
 
-ENV_NAME=speos_kiml
+# Mantis does NOT share the SPEOS environment. setup.py pins tensorflow 1.13.1
+# and Keras 2.2.4, and ensemble_lib.py does `from keras.optimizers import Adam`
+# at import time, so the PyTorch env used for SPEOS cannot run it. Set
+# MANTIS_ENV to whichever environment the original Mantis runs used:
+#   MANTIS_ENV=mantis sbatch ... run_mantis.slurm
+ENV_NAME="${MANTIS_ENV:-speos_kiml}"
 MANIFEST=additional_experiments/revision_runs/mantis_manifest.txt
 NTHREADS="${SLURM_CPUS_PER_TASK:-16}"
 ITERATIONS=1          # matches the published runs (-i 1)
@@ -123,18 +128,53 @@ mkdir -p "$PIP_CACHE_DIR" "$TMPDIR" || {
 }
 echo "[info] scratch: ${KIML_SCRATCH}"
 
-SHARED_ENVS=/data/gpfs/projects/punim0512/anaconda3/envs
-if [ -d "$SHARED_ENVS" ]; then
-    export CONDA_ENVS_PATH="$SHARED_ENVS"
-fi
+# Deliberately NOT setting CONDA_ENVS_PATH here. run_revision.slurm points it
+# at the shared SPEOS envs under punim0512, but mantis-env lives in the user's
+# home anaconda install - overriding the search path can hide it.
 eval "$(conda shell.bash hook)"
-if ! conda info --envs | grep -E -q "\b$ENV_NAME\b"; then
-    echo "[Error] Conda environment '$ENV_NAME' not found."
+if ! conda info --envs | grep -E -q "(^|/)${ENV_NAME}[[:space:]]"; then
+    echo "[Error] Conda environment '$ENV_NAME' not found. Available:"
+    conda info --envs | sed 's/^/          /'
+    echo "        Set MANTIS_ENV=<name> when submitting."
     exit 1
 fi
-conda activate "$ENV_NAME"
+conda activate "$ENV_NAME" || {
+    echo "[Error] Could not activate '$ENV_NAME'."
+    exit 1
+}
+echo "[info] environment: ${ENV_NAME}  ($(python -c 'import sys; print(sys.version.split()[0])'))"
 
 cd external/Mantis || exit 1
+
+# `python path/to/__main__.py` puts the SCRIPT's directory on sys.path, not the
+# working directory, so `import mantis_ml` fails with ModuleNotFoundError even
+# when standing in external/Mantis. The original Nextflow runs worked because
+# the package was pip-installed in their environment. Putting the package root
+# on PYTHONPATH avoids needing to install it.
+export PYTHONPATH="$PWD:${PYTHONPATH:-}"
+
+# Fail now, with a readable message, rather than part-way through a long run.
+python - <<'PREFLIGHT' || exit 1
+import importlib, sys
+missing = []
+for mod in ("mantis_ml", "sklearn", "pandas", "numpy", "yaml", "keras"):
+    try:
+        importlib.import_module(mod)
+    except Exception as exc:
+        missing.append("{}: {}".format(mod, exc))
+if missing:
+    print("[Error] Mantis dependencies unavailable in this environment:")
+    for m in missing:
+        print("   " + m)
+    print("")
+    print("        Mantis needs its own environment - setup.py pins")
+    print("        tensorflow 1.13.1 / Keras 2.2.4, which the SPEOS env lacks.")
+    print("        Find the environment the original Mantis runs used:")
+    print("          conda env list")
+    print("        then resubmit with:  MANTIS_ENV=<name> sbatch ...")
+    sys.exit(1)
+print("[info] preflight: mantis_ml and dependencies import cleanly")
+PREFLIGHT
 
 CONFIG="mantis_ml/conf/${STEM}_config.yaml"
 KNOWN="Input_Files/${STEM}.tsv"
