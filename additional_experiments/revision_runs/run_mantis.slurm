@@ -28,9 +28,17 @@
 #SBATCH --job-name=kiml_mantis
 #SBATCH --output=logs/mantis_%A_%a.stdout
 #SBATCH --error=logs/mantis_%A_%a.err
-#SBATCH --time=0-08:00:00
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=64G
+# Sized from a measured DEE RF run (job 33764641): 26m53s wall, 65m01s CPU on
+# 16 cores - i.e. ~2.4 cores used on average - and 22 GB peak.
+#
+# The original request of 16 cores / 64 GB / 8 h was 15% CPU-efficient and 34%
+# memory-efficient. Over-requesting delays scheduling for no benefit, which
+# matters when the account is already being deprioritised. These values give
+# roughly 3x headroom on cores and 1.5x on memory, and a walltime short enough
+# for the job to backfill.
+#SBATCH --time=0-02:00:00
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32G
 
 set -u
 
