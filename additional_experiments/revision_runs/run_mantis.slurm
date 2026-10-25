@@ -131,6 +131,13 @@ echo "[info] scratch: ${KIML_SCRATCH}"
 # Deliberately NOT setting CONDA_ENVS_PATH here. run_revision.slurm points it
 # at the shared SPEOS envs under punim0512, but mantis-env lives in the user's
 # home anaconda install - overriding the search path can hide it.
+# `set -u` must be OFF across conda activation. Environments can ship
+# activate.d hooks that reference unset variables - mantis-env has
+# openjdk_activate.sh, which reads JAVA_HOME with no default and aborts the
+# job under nounset with:
+#     openjdk_activate.sh: line 1: JAVA_HOME: unbound variable
+# The hooks are third-party, so guard the call rather than patching them.
+set +u
 eval "$(conda shell.bash hook)"
 if ! conda info --envs | grep -E -q "(^|/)${ENV_NAME}[[:space:]]"; then
     echo "[Error] Conda environment '$ENV_NAME' not found. Available:"
@@ -142,6 +149,7 @@ conda activate "$ENV_NAME" || {
     echo "[Error] Could not activate '$ENV_NAME'."
     exit 1
 }
+set -u
 echo "[info] environment: ${ENV_NAME}  ($(python -c 'import sys; print(sys.version.split()[0])'))"
 
 cd external/Mantis || exit 1
