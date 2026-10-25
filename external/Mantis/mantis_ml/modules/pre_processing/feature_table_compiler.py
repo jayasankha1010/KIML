@@ -262,8 +262,18 @@ class FeatureTableCompiler:
         
 
         # ---------------- CONFIG ----------------
-        feature_mode = "combined"   # options: core_only | external_only | combined
-        ext_mode     = "pubmed"        # options: toppgene | pubmed | both
+        # KIML: these were hardcoded literals, so producing the three published
+        # arms meant editing this file between runs. That cannot drive a job
+        # array, and it left no record in the output of which arm a result came
+        # from. They now come from the config, set by --feature-mode /
+        # --ext-mode, defaulting to the previous values so behaviour is
+        # unchanged when the flags are absent.
+        #
+        #   core_only      Mantis's own features only       -> RF
+        #   external_only  external (PubMed) features only  -> C-RF
+        #   combined       both                             -> KI-RF
+        feature_mode = getattr(self.cfg, "feature_mode", "combined")
+        ext_mode     = getattr(self.cfg, "ext_mode", "pubmed")
 
         # toppgene_path = Path("/data/projects/punim2453/Mantis-ml-NDD/mantis_ml/data/toppgene/toppgene_top50_chi2.tsv")
         # toppgene_path = Path("/data/projects/punim2453/Mantis-ml-NDD/mantis_ml/data/toppgene/toppgene_boruta_rearranged_for_dee.tsv")

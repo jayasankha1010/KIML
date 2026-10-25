@@ -11,8 +11,8 @@ from argparse import RawTextHelpFormatter
 
 class MantisMl:
 
-	def __init__(self, config_file, output_dir, nthreads=4, iterations=10, custom_known_genes_file=None, fast_run_option=False, superv_models=None):
-		
+	def __init__(self, config_file, output_dir, nthreads=4, iterations=10, custom_known_genes_file=None, fast_run_option=False, superv_models=None, feature_mode=None, ext_mode=None, seed=None):
+
 		from mantis_ml.config_class import Config
 		self.config_file = config_file
 		self.output_dir = output_dir
@@ -22,6 +22,29 @@ class MantisMl:
 		# modify default config paramters when provided with respective parameters
 		self.cfg.nthreads = int(nthreads)
 		self.cfg.iterations = int(iterations)
+
+		# KIML: which feature set this run uses. Previously hardcoded in
+		# feature_table_compiler.py, so producing the three arms meant editing
+		# source between runs. See that file for the mapping to RF/C-RF/KI-RF.
+		if feature_mode:
+			self.cfg.feature_mode = feature_mode
+		if ext_mode:
+			self.cfg.ext_mode = ext_mode
+
+		# KIML: make a run reproducible. cfg.random_state looks like it already
+		# does this, but balanced_datasets_random_generator.py draws its
+		# positive-gene subsample and k-fold seeds with random.randint(), and
+		# Python's global RNG is never seeded anywhere in mantis_ml - so every
+		# run differed while cfg.random_state suggested otherwise. Seeding here
+		# makes those draws deterministic per seed, which is what lets us run
+		# one configuration N times and report the spread.
+		if seed is not None:
+			import random as _random
+			import numpy as _np
+			_random.seed(int(seed))
+			_np.random.seed(int(seed))
+			self.cfg.random_state = int(seed)
+			print('[KIML] seeded run: seed={0}'.format(seed))
 
 		if fast_run_option:
 			self.cfg.classifiers = ['ExtraTreesClassifier', 'RandomForestClassifier', 'SVC', 'GradientBoostingClassifier']
@@ -221,6 +244,15 @@ def main():
 	parser.add_argument("-k", dest="known_genes_file", help="File with custom list of known genes used for training (new-line separated)\n\n")
 	parser.add_argument("-n", dest="nthreads", default=4, help="Number of threads (default: 4)\n\n")
 	parser.add_argument("-i", dest="iterations", default=10, help="Number of stochastic iterations for semi-supervised learning (default: 10)\n\n")
+	# KIML additions ---------------------------------------------------------
+	parser.add_argument("--feature-mode", dest="feature_mode", default=None,
+			    choices=['core_only', 'external_only', 'combined'],
+			    help="Which feature set to train on. Was a hardcoded literal in\nfeature_table_compiler.py, so the three published arms required\nediting source between runs.\n core_only:     Mantis's own features only      -> RF\n external_only: external (PubMed) features only -> C-RF\n combined:      both                           -> KI-RF\n(default: unchanged, i.e. 'combined')\n\n")
+	parser.add_argument("--ext-mode", dest="ext_mode", default=None,
+			    choices=['toppgene', 'pubmed', 'both'],
+			    help="Which external feature source to use (default: unchanged, i.e. 'pubmed')\n\n")
+	parser.add_argument("--seed", dest="seed", default=None,
+			    help="Seed Python and numpy RNGs and set cfg.random_state, making the\nrun reproducible. Without this, balanced dataset construction draws\nfrom an unseeded global RNG and every run differs.\n\n")
 
 	if len(sys.argv)==1:
 		parser.print_help(sys.stderr)
@@ -243,13 +275,16 @@ def main():
 	iterations = args.iterations
 
 
-	mantis = MantisMl(config_file, 
-			  output_dir, 
-			  nthreads=nthreads, 
-			  iterations=iterations, 
+	mantis = MantisMl(config_file,
+			  output_dir,
+			  nthreads=nthreads,
+			  iterations=iterations,
 			  custom_known_genes_file=custom_known_genes_file,
 			  fast_run_option = fast_run_option,
-			  superv_models = superv_models)
+			  superv_models = superv_models,
+			  feature_mode = args.feature_mode,
+			  ext_mode = args.ext_mode,
+			  seed = args.seed)
 
 
 	if run_tag == 'all':
