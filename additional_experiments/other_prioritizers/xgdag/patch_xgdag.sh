@@ -77,6 +77,14 @@ subs = [
      "    graph_path  = PATH_TO_GRAPHS + 'grafo_nedbit_' + disease_Id + '.gml'"),
     ("get_dataset_from_graph(graph_path, disease_Id, quartile=False, from_diamond=True)",
      "get_dataset_from_graph(graph_path, disease_Id, quartile=False, from_diamond=False)"),
+    # The output filename hardcodes '_diamond_' regardless of which variant
+    # actually ran, so our standard-variant output would be written over the
+    # shipped Rankings/<id>_all_positives_diamond_xgdag_<method>.txt - one of
+    # the authors' published reference files, and the thing we need to compare
+    # against. Write somewhere unambiguous instead: nothing is clobbered, and
+    # the name says whose run it is.
+    ("    filename = PATH_TO_RANKINGS + disease_Id + '_all_positives_diamond_'",
+     "    filename = PATH_TO_RANKINGS + disease_Id + '_kiml_'"),
 ]
 
 missing = [old for old, _ in subs if old not in src]
@@ -95,8 +103,12 @@ PATCH
 
 echo
 echo "Changed:"
-echo "  model  GraphSAGE_<id>_diamond          -> GraphSAGE_<id>"
-echo "  graph  grafo_diamond_nedbit_<id>.gml   -> grafo_nedbit_<id>.gml"
-echo "  data   from_diamond=True               -> False"
+echo "  model   GraphSAGE_<id>_diamond                 -> GraphSAGE_<id>"
+echo "  graph   grafo_diamond_nedbit_<id>.gml          -> grafo_nedbit_<id>.gml"
+echo "  data    from_diamond=True                      -> False"
+echo "  output  Rankings/<id>_all_positives_diamond_*  -> Rankings/<id>_kiml_*"
+echo
+echo "Our runs now write Rankings/<id>_kiml_xgdag_<method>.txt, so the shipped"
+echo "reference files are left intact for comparison."
 echo
 echo "Backup at $TARGET.orig  (bash patch_xgdag.sh --revert to undo)"
