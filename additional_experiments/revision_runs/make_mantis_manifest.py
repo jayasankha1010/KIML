@@ -22,6 +22,7 @@ Usage:
 
 import argparse
 import os
+import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
@@ -52,6 +53,12 @@ def main():
     parser.add_argument("-o", "--out",
                         default=os.path.join(HERE, "mantis_manifest.txt"))
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--print-missing", action="store_true",
+                        help="print ONLY a comma-separated list of array indices "
+                             "whose output file does not yet exist, and exit. "
+                             "Lets the whole thing be one command:\n"
+                             "  sbatch --array=\"$(... --print-missing)%%6\" run_mantis.slurm\n"
+                             "which avoids losing a shell variable between sessions.")
     args = parser.parse_args()
 
     missing = []
@@ -74,6 +81,30 @@ def main():
         for path in missing:
             print("   {}".format(path))
         raise SystemExit(1)
+
+    if args.print_missing:
+        # Read the manifest already on disk rather than the freshly built list:
+        # the indices must match what run_mantis.slurm will index into, and a
+        # regenerated list could differ if --diseases/--arms/--seeds changed.
+        if not os.path.exists(args.out):
+            raise SystemExit("No manifest at {}; generate it first.".format(args.out))
+        with open(args.out) as handle:
+            existing = [l.strip() for l in handle if l.strip()]
+        todo = []
+        for index, line in enumerate(existing):
+            disease, arm, seed = line.split(":")
+            out = os.path.join(
+                MANTIS, "Mantis_Out", "Mantis_{}_{}_s{}".format(disease, arm, seed),
+                "Gene-Predictions", "RandomForestClassifier.mantis-ml_predictions.csv")
+            if not os.path.exists(out):
+                todo.append(str(index))
+        if not todo:
+            raise SystemExit("Nothing missing - all {} runs have output.".format(
+                len(existing)))
+        # stdout must carry the list and nothing else, for command substitution.
+        print(",".join(todo))
+        sys.stderr.write("{} of {} runs missing\n".format(len(todo), len(existing)))
+        return
 
     if args.dry_run:
         for i, line in enumerate(lines):
