@@ -28,12 +28,26 @@ PYTHON_VERSION="${PYTHON_VERSION:-3.10}"
 
 echo "[+] env=$ENV_NAME  torch=$TORCH_VERSION  cuda=$CUDA  python=$PYTHON_VERSION"
 
+# `set -u` must be OFF across every conda activation. Environments ship
+# activate.d hooks that reference unset variables - this one has
+# libblas_mkl_activate.sh, which reads MKL_INTERFACE_LAYER with no default and
+# kills the script under nounset:
+#     libblas_mkl_activate.sh: line 1: MKL_INTERFACE_LAYER: unbound variable
+# (mantis-env has the same problem with JAVA_HOME.) The hooks are third-party,
+# so guard the calls rather than patching them.
+set +u
 eval "$(conda shell.bash hook)"
+set -u
 
-if conda env list | grep -qE "^${ENV_NAME}\s"; then
-    echo "[!] environment '$ENV_NAME' already exists."
-    echo "    Remove it first:  conda env remove -n $ENV_NAME"
-    exit 1
+# Resuming is the common case: the conda step succeeds, something later fails,
+# and re-running should continue rather than refuse. Creation is the only part
+# that is not idempotent, so skip just that.
+if conda env list | grep -qE "^${ENV_NAME}[[:space:]]"; then
+    echo "[=] environment '$ENV_NAME' already exists - skipping creation,"
+    echo "    continuing with the pip steps (safe to repeat)."
+    SKIP_CREATE=1
+else
+    SKIP_CREATE=0
 fi
 
 # Step 1 - python + torch only. Keep the solve small and prefer libmamba.
@@ -42,17 +56,21 @@ if conda config --show solver >/dev/null 2>&1; then
     SOLVER="--solver=libmamba"
 fi
 
-echo "[+] creating environment with python and torch"
-if [ "$CUDA" = "cpu" ]; then
-    conda create -y -n "$ENV_NAME" $SOLVER -c pytorch -c conda-forge \
-        "python=${PYTHON_VERSION}" "pytorch=${TORCH_VERSION}" cpuonly
-else
-    conda create -y -n "$ENV_NAME" $SOLVER -c pytorch -c conda-forge \
-        "python=${PYTHON_VERSION}" "pytorch=${TORCH_VERSION}" \
-        "cudatoolkit=${CUDA#cu}"
+if [ "$SKIP_CREATE" -eq 0 ]; then
+    echo "[+] creating environment with python and torch"
+    if [ "$CUDA" = "cpu" ]; then
+        conda create -y -n "$ENV_NAME" $SOLVER -c pytorch -c conda-forge \
+            "python=${PYTHON_VERSION}" "pytorch=${TORCH_VERSION}" cpuonly
+    else
+        conda create -y -n "$ENV_NAME" $SOLVER -c pytorch -c conda-forge \
+            "python=${PYTHON_VERSION}" "pytorch=${TORCH_VERSION}" \
+            "cudatoolkit=${CUDA#cu}"
+    fi
 fi
 
+set +u
 conda activate "$ENV_NAME"
+set -u
 
 # Step 2 - the PyG stack, from the index keyed by torch build. No solving.
 WHEELS="https://data.pyg.org/whl/torch-${TORCH_VERSION}+${CUDA}.html"
