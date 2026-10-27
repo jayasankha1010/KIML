@@ -59,6 +59,15 @@ if [ ! -x "$CALC" ]; then
         "$SRC/nedbit_features_calculator.c" -lm
 fi
 
+# Stage 2 of NIAPU: APU label propagation, which produces the <id>_ranking
+# file XGDAG also requires. Same build flags for the same reasons.
+APU="$WORK/apu_label_propagation"
+if [ ! -x "$APU" ]; then
+    echo "[+] compiling apu_label_propagation"
+    gcc -O2 -DUNIX -DFIXEDSEED -o "$APU" \
+        "$SRC/apu_label_propagation.c" -lm
+fi
+
 if [ "$#" -gt 0 ]; then
     DISEASES="$*"
 else
@@ -77,10 +86,31 @@ for disease in $DISEASES; do
     perl "$SRC/preprocess.pl" "$PPI" "$seed" "$d/out_links" "$d/out_genes"
     "$CALC" "$d/out_links" "$d/out_genes" "$OUT/${disease}_features"
 
-    if [ -s "$OUT/${disease}_features" ]; then
-        echo "    -> $(( $(wc -l < "$OUT/${disease}_features") - 1 )) genes, $(head -1 "$OUT/${disease}_features")"
-    else
+    if [ ! -s "$OUT/${disease}_features" ]; then
         echo "    [Error] no features produced for $disease"
+        continue
+    fi
+    echo "    features: $(( $(wc -l < "$OUT/${disease}_features") - 1 )) genes"
+
+    # XGDAG needs a THIRD file per disease: Datasets/<id>_ranking, holding the
+    # APU pseudo-labels. CreateDatasetv2 reads it as
+    #     name out label      e.g.  FLNC 0.849670 1
+    # and maps the label through {'P':0,'LP':1,'WN':2,'LN':3,'RN':4}. Without
+    # it the dataset cannot be built, so generating features alone is not
+    # enough. It comes from NIAPU's second stage, APU label propagation.
+    #
+    # Arguments, per the NIAPU README and apu_label_propagation.c:
+    #     fileIn flagHeader fileOut sQuantile rnQuantile
+    # flagHeader=1 because the features file written above carries a header
+    # row; 0.05 and 0.2 are the quantiles used in the NIAPU paper for weak-link
+    # removal and reliable-negative selection.
+    "$APU" "$OUT/${disease}_features" 1 "$OUT/${disease}_ranking" 0.05 0.2
+
+    if [ -s "$OUT/${disease}_ranking" ]; then
+        echo "    ranking : $(wc -l < "$OUT/${disease}_ranking") genes, e.g. $(head -1 "$OUT/${disease}_ranking")"
+        echo "    labels  : $(awk '{print $3}' "$OUT/${disease}_ranking" | sort | uniq -c | tr '\n' ' ')"
+    else
+        echo "    [Error] APU label propagation produced no ranking for $disease"
     fi
 done
 
