@@ -1,0 +1,46 @@
+# Minimal CPU environment for XGDAG.
+#
+# WHY NOT THE SHIPPED FILES. XGDAG/CondaEnvs/ has four, none usable here:
+#   xgdag_environment.yml       Windows build strings (py310h2bbff1b, haa95532)
+#   xgdag_environment_macos*.yml  osx-arm64
+#   xgdag_environment_nb_gpu.yml  Linux, but 189 pinned packages, most of them
+#                                 Jupyter and plotting, which makes the solve
+#                                 slow and brittle for no benefit
+#
+# The code imports only: torch, torch_geometric, networkx, numpy, pandas,
+# sklearn, matplotlib, seaborn, tqdm. This pins those to the versions in the
+# authors' own GPU env and lets conda choose the rest.
+#
+# VERSIONS. The README says "PyTorch 1.12 and PyTorch Geometric 2.1", but
+# xgdag_environment_nb_gpu.yml pins pytorch=1.11.0 and pyg=2.0.4. The env file
+# is what they actually ran, so that is what is pinned here.
+#
+# START WITH CPU. The gate is "does XGDAG run and reproduce one of its own
+# diseases", which does not need a GPU: the graph is ~19.8k nodes and
+# GraphSAGE training is small. CUDA pinning is the most likely thing to fail
+# on a cluster, so leave it out until the pipeline is known to work. Switch to
+# xgdag_gpu.yml if the explainer stage proves too slow.
+#
+# Usage:
+#   mamba env create -f xgdag_cpu.yml      # mamba solves this far faster
+#   conda env create -f xgdag_cpu.yml      # fallback
+name: xgdag
+channels:
+  - pytorch
+  - pyg
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pytorch=1.11.0
+  - cpuonly
+  - pyg=2.0.4
+  - pytorch-scatter=2.0.9
+  - pytorch-sparse=0.6.14
+  - pytorch-cluster=1.6.0
+  - networkx=2.7.1
+  - numpy=1.22.3
+  - pandas=1.4.4
+  - scikit-learn=1.0.2
+  - matplotlib
+  - seaborn
+  - tqdm

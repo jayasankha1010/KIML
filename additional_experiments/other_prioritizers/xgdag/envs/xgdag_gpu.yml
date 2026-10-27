@@ -1,0 +1,41 @@
+# GPU environment for XGDAG - only worth building if the CPU one proves too
+# slow at the explainer stage.
+#
+# Same pins as xgdag_cpu.yml, with CUDA. cudatoolkit=11.3 matches the authors'
+# xgdag_environment_nb_gpu.yml. The CUDA pin is the most fragile part of this
+# file: pytorch 1.11 / pyg 2.0.4 / cudatoolkit 11.3 are 2022 packages, and if
+# the pyg channel no longer carries matching builds the solve will fail. That
+# is exactly why the CPU environment exists and should be tried first.
+#
+# If this will not solve, options in order of preference:
+#   1. stay on CPU - the graph is ~19.8k nodes, which is not large
+#   2. relax to cudatoolkit=11.6 and pytorch=1.12, closer to the README's
+#      claim, and accept a small deviation from the authors' setup
+#   3. install pyg's companion libs from the pyg wheel index with pip instead
+#      of conda:
+#        pip install torch-scatter torch-sparse \
+#          -f https://data.pyg.org/whl/torch-1.11.0+cu113.html
+#
+# Usage:
+#   mamba env create -f xgdag_gpu.yml
+name: xgdag_gpu
+channels:
+  - pytorch
+  - pyg
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pytorch=1.11.0
+  - cudatoolkit=11.3
+  - pyg=2.0.4
+  - pytorch-scatter=2.0.9
+  - pytorch-sparse=0.6.14
+  - pytorch-cluster=1.6.0
+  - networkx=2.7.1
+  - numpy=1.22.3
+  - pandas=1.4.4
+  - scikit-learn=1.0.2
+  - matplotlib
+  - seaborn
+  - tqdm
