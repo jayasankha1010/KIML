@@ -28,17 +28,29 @@
 #SBATCH --job-name=kiml_mantis
 #SBATCH --output=logs/mantis_%A_%a.stdout
 #SBATCH --error=logs/mantis_%A_%a.err
-# Sized from a measured DEE RF run (job 33764641): 26m53s wall, 65m01s CPU on
-# 16 cores - i.e. ~2.4 cores used on average - and 22 GB peak.
+# MEMORY SCALES WITH cpus-per-task, BECAUSE EACH PU WORKER HOLDS ITS OWN COPY
+# OF THE FEATURE TABLE. Measured:
 #
-# The original request of 16 cores / 64 GB / 8 h was 15% CPU-efficient and 34%
-# memory-efficient. Over-requesting delays scheduling for no benefit, which
-# matters when the account is already being deprioritised. These values give
-# roughly 3x headroom on cores and 1.5x on memory, and a walltime short enough
-# for the job to backfill.
-#SBATCH --time=0-02:00:00
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=32G
+#   RF    (core_only)      ~1.4 GB per worker   22 GB peak at 16 workers
+#   C-RF  (external_only)  ~10.3 GB per worker  OOM-killed at 32 GB / 8 workers
+#   KI-RF (combined)       ~10.3 GB per worker  OOM-killed at 32 GB / 8 workers
+#
+# The PubMed block adds 384 columns, making the table ~7x larger, so the arms
+# that include it need roughly 7x the memory for the same worker count. The
+# first attempt at 8 workers / 32 GB died with exit 137 (SIGKILL) and
+# "oom-kill:constraint=CONSTRAINT_MEMCG" after ~37 minutes - all 45 RF runs
+# succeeded and all 90 C-RF/KI-RF runs failed.
+#
+# Budget as:  mem >= cpus-per-task * per-worker + ~8 GB overhead
+#
+# Defaults below are sized for the EXPENSIVE arms. Resubmitting RF alone can
+# safely use  --cpus-per-task=8 --mem=32G  to schedule faster.
+#
+# Fewer workers is the cheaper lever: a measured RF run used only ~2.4 cores on
+# average, so dropping from 8 to 4 costs little wall time and halves memory.
+#SBATCH --time=0-04:00:00
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=96G
 
 set -u
 

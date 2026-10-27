@@ -338,6 +338,28 @@ class FeatureTableCompiler:
             if "known_gene" in ext_df.columns:
                 ext_df = ext_df.drop(columns=["known_gene"])
             merged = base_df.merge(ext_df, on=gene_col, how="left", validate="many_to_one")
+
+            # KIML: a LEFT join leaves NaN for every gene absent from the
+            # external table, and verify_no_missing_data() only runs on the
+            # CORE table - before this merge - so nothing caught it. The NaN
+            # survived all the way into training and killed the run with
+            #     ValueError: Input contains NaN, infinity or a value too
+            #     large for dtype('float32')
+            # inside RandomForestClassifier.fit, after ~30 minutes of work.
+            #
+            # Zero-fill rather than drop the genes. A gene with no PubMed
+            # record has no literature signal, and 0 is the natural encoding
+            # for that; dropping it would instead shrink the universe and make
+            # the arms incomparable. This matches how the GNN side handles the
+            # same situation - align_to_speos_symbols.py emits an all-zero row
+            # for unmatched genes to preserve the universe exactly.
+            new_cols = [c for c in ext_df.columns if c != gene_col]
+            n_missing = int(merged[new_cols].isnull().any(axis=1).sum())
+            if n_missing:
+                print(f"[warn] {n_missing} of {len(merged)} genes had no {label} "
+                      f"entry; filling their {len(new_cols)} columns with 0.")
+                merged[new_cols] = merged[new_cols].fillna(0)
+
             print(f"[done] Added {ext_df.shape[1] - 1} new columns from {label}.")
             return merged
 
@@ -392,6 +414,22 @@ class FeatureTableCompiler:
         cols = [c for c in core_cols if c in final_df.columns] + \
             [c for c in final_df.columns if c not in core_cols]
         final_df = final_df[cols]
+
+        # KIML: verify_no_missing_data() runs on the core table only, so any
+        # NaN introduced downstream - by an external merge, a column rename, a
+        # reindex - reached sklearn and failed half an hour into training with
+        # an unhelpful dtype error. Check the table we are actually about to
+        # train on, and fail here where the message can name the columns.
+        numeric = final_df.select_dtypes(include=["number"])
+        nan_cols = numeric.columns[numeric.isnull().any()].tolist()
+        inf_cols = numeric.columns[numeric.abs().eq(float("inf")).any()].tolist()
+        bad = sorted(set(nan_cols) | set(inf_cols))
+        if bad:
+            print("[Error] Final feature table has NaN/inf in {} column(s): {}".format(
+                len(bad), bad[:10]))
+            print("        feature_mode={}, ext_mode={}".format(feature_mode, ext_mode))
+            print("        Aborting before training rather than failing inside fit().")
+            sys.exit(1)
 
         out_path = Path(self.cfg.complete_feature_table)
         out_path.parent.mkdir(parents=True, exist_ok=True)
