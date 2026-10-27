@@ -41,7 +41,22 @@ mkdir -p "$OUT" "$WORK"
 CALC="$WORK/nedbit_calc"
 if [ ! -x "$CALC" ]; then
     echo "[+] compiling nedbit_features_calculator"
-    gcc -O2 -o "$CALC" "$SRC/nedbit_features_calculator.c" -lm
+    # -DUNIX is REQUIRED, not optional. The seeding block is
+    #     #ifndef FIXEDSEED
+    #     #ifdef UNIX   ... srand48 ...
+    #     #else         ... __mingw_fprintf ...
+    # so without it the compiler takes the Windows branch and the link fails
+    # with "undefined reference to __mingw_fprintf".
+    #
+    # -DFIXEDSEED makes the features REPRODUCIBLE. The randomness is not
+    # cosmetic: cutSeedGenes() uses it to discard a random fraction of the
+    # seed genes, so with time(NULL) seeding a different subset is dropped on
+    # every run and the features - hence XGDAG's whole ranking - change each
+    # time. Defining it skips the seeding block, leaving drand48 in its
+    # default state. The source already declares a fixed default seed, so
+    # this is the intended switch.
+    gcc -O2 -DUNIX -DFIXEDSEED -o "$CALC" \
+        "$SRC/nedbit_features_calculator.c" -lm
 fi
 
 if [ "$#" -gt 0 ]; then
