@@ -100,7 +100,25 @@ pip install --no-cache-dir "torch-geometric==2.0.4"
 echo "[+] installing remaining dependencies"
 pip install --no-cache-dir \
     "networkx==2.7.1" "numpy==1.22.3" "pandas==1.4.4" \
-    "scikit-learn==1.0.2" matplotlib seaborn tqdm
+    "scikit-learn==1.0.2" matplotlib seaborn tqdm scipy
+
+# Step 4 - two dependencies the environment files omit but the code needs.
+#
+#   rdkit        SubgraphX/SubgraphX.py does "from rdkit import Chem". SubgraphX
+#                came from molecular explainability, and the import survived the
+#                move to gene networks. GDARanking.py imports SubgraphX
+#                unconditionally, so this is required even when running
+#                gnnexplainer - the cheap explainer cannot be used without it.
+#   tensorboardX imported by the training code.
+#
+# Neither appears in any of the four shipped CondaEnvs files, so a faithful
+# rebuild of the authors' environment still cannot run the code.
+echo "[+] installing dependencies missing from the authors' env files"
+pip install --no-cache-dir tensorboardX
+pip install --no-cache-dir rdkit || {
+    echo "[!] 'rdkit' failed; trying the older PyPI name 'rdkit-pypi'"
+    pip install --no-cache-dir rdkit-pypi
+}
 
 echo
 echo "[+] verifying"

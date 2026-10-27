@@ -83,6 +83,16 @@ def main():
             sklearn.__version__, numpy.__version__)
     ok &= check("networkx/pandas/sklearn", _rest)
 
+    def _extras():
+        # Neither is in any of the four shipped CondaEnvs files, but the code
+        # imports both. rdkit comes in via SubgraphX, which GDARanking imports
+        # unconditionally - so without it even gnnexplainer cannot run.
+        import rdkit
+        import tensorboardX
+        return "rdkit {}, tensorboardX {}".format(
+            rdkit.__version__, tensorboardX.__version__)
+    ok &= check("rdkit / tensorboardX", _extras)
+
     def _explainer():
         # XGDAG's ranking stage is built on PyG's explainability module; which
         # names exist moved around between PyG versions, so check rather than
