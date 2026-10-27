@@ -72,10 +72,28 @@ set +u
 conda activate "$ENV_NAME"
 set -u
 
+# Confirm torch is importable before anything tries to build against it.
+python -c "import torch; print('[+] torch', torch.__version__)" || {
+    echo "[Error] torch is not installed in '$ENV_NAME'."
+    echo "        Remove the environment and let this script create it:"
+    echo "          conda env remove -n $ENV_NAME"
+    exit 1
+}
+
 # Step 2 - the PyG stack, from the index keyed by torch build. No solving.
+#
+# VERSIONS MUST BE PINNED and source builds forbidden. Unpinned, pip prefers
+# the newest release it can see anywhere - so it picks torch-scatter 2.1.2
+# from PyPI as a SOURCE tarball over the 2.0.9 wheel in this index, then tries
+# to compile it. That build runs in an isolated environment with no torch, and
+# dies with a misleading "ModuleNotFoundError: No module named 'torch'".
+#
+# --only-binary=:all: makes a missing wheel an immediate, honest error rather
+# than a twenty-minute compile that fails at the end.
 WHEELS="https://data.pyg.org/whl/torch-${TORCH_VERSION}+${CUDA}.html"
 echo "[+] installing PyG stack from ${WHEELS}"
-pip install --no-cache-dir torch-scatter torch-sparse torch-cluster -f "$WHEELS"
+pip install --no-cache-dir --only-binary=:all: -f "$WHEELS" \
+    "torch-scatter==2.0.9" "torch-sparse==0.6.14" "torch-cluster==1.6.0"
 pip install --no-cache-dir "torch-geometric==2.0.4"
 
 # Step 3 - the plain scientific stack. Versions matched to the authors' env.
