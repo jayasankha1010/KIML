@@ -235,6 +235,11 @@ additional_experiments/text_representations/*.txt
 # run_revision.slurm. Lives beside the checkout so the repo can move between
 # project allocations without temp files still landing on the old filesystem.
 .scratch/
+# XGDAG working files. The seed/target lists are small and worth tracking (they
+# encode the symbol mapping decisions), but the NeDBIT intermediates and the
+# generated feature tables are regenerable from NIAPU in minutes.
+additional_experiments/other_prioritizers/xgdag/.nedbit_work/
+additional_experiments/other_prioritizers/xgdag/features/
 # Raw ToppGene web exports: 50 MB across 12 files, 21 columns of which we use
 # two. These were produced by hand and are NOT script-regenerable, so the Rank
 # and GeneSymbol columns are extracted to other_prioritizers/toppgene_rankings.tsv
