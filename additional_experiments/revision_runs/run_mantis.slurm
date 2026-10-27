@@ -231,9 +231,39 @@ ELAPSED=$(( $(date +%s) - START ))
 
 echo "----------------------------------------"
 echo "--> Mantis finished in ${ELAPSED}s (exit ${STATUS})"
-if [ "$STATUS" -ne 0 ]; then
-    echo "[Error] ${RUN_NAME} failed."
-    exit "$STATUS"
+
+# Judge the run by the artefact we need, not only by the exit code.
+#
+# mantis-ml runs a UMAP visualisation step AFTER writing predictions, and in
+# this environment it dies with a numba/UMAP incompatibility:
+#     RecursionError: maximum recursion depth exceeded in comparison
+#     SystemError: <class 'bool'> returned a result with an error set
+# raised from dimens_reduction.calc_umap. The same traceback appears in the
+# archived logs from the ORIGINAL published runs, so it predates this work and
+# the published results were produced despite it. UMAP output is used only for
+# the unsupervised-learning plots and has no bearing on the rankings.
+#
+# So: if the predictions file exists, the run gave us what it was for. Say so,
+# while still reporting that the process exited non-zero.
+PRED="${OUTDIR}/Gene-Predictions/RandomForestClassifier.mantis-ml_predictions.csv"
+if [ -s "$PRED" ]; then
+    ROWS=$(( $(wc -l < "$PRED") - 1 ))
+    if [ "$STATUS" -ne 0 ]; then
+        echo "[Warn] exited ${STATUS}, but predictions were written before the failure."
+        echo "       Check the traceback above is the known post-prediction UMAP crash"
+        echo "       and not something that happened during training."
+    fi
+    echo "[Success] ${RUN_NAME} complete at $(date) (${ELAPSED}s total)"
+    echo "[info] predictions: ${ROWS} genes -> external/Mantis/${PRED}"
+    exit 0
 fi
-echo "[Success] ${RUN_NAME} complete at $(date) (${ELAPSED}s total)"
-echo "[info] outputs under external/Mantis/${OUTDIR}"
+
+echo "[Error] ${RUN_NAME} produced no predictions file:"
+echo "        external/Mantis/${PRED}"
+# "${STATUS:-1}" would propagate a 0 here, because :- only substitutes when the
+# variable is unset or empty and 0 is neither - so a run that exited cleanly
+# but wrote nothing would be recorded as a success.
+if [ "$STATUS" -eq 0 ]; then
+    exit 1
+fi
+exit "$STATUS"
