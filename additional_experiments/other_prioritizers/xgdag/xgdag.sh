@@ -38,8 +38,24 @@ fi
 # script under nounset.
 set +u
 eval "$(conda shell.bash hook)"
+# XGDAG_ENV may be a NAME or a full PREFIX PATH. Environments with CUDA
+# PyTorch are several GB and will blow a home-directory quota, so they often
+# have to live under the project allocation and be activated by path.
 conda activate "$ENV_NAME" || { echo "[Error] cannot activate '$ENV_NAME'"; exit 1; }
 set -u
+
+# torch-sparse and torch-cluster are compiled against CUDA and link to
+# libcusparse.so.11 / libcublas.so.11. The torch +cu113 pip wheel ships those
+# inside torch/lib/, but the dynamic loader does not look there by default, so
+# importing torch_geometric fails with
+#     OSError: libcusparse.so.11: cannot open shared object file
+# even though the library is present. Point LD_LIBRARY_PATH at it. Harmless
+# for the CPU environment, where the directory simply holds no CUDA libs.
+TORCH_LIB=$(python -c "import os,torch;print(os.path.join(os.path.dirname(torch.__file__),'lib'))" 2>/dev/null)
+if [ -n "${TORCH_LIB:-}" ] && [ -d "$TORCH_LIB" ]; then
+    export LD_LIBRARY_PATH="${TORCH_LIB}:${LD_LIBRARY_PATH:-}"
+    echo "[info] torch libs: ${TORCH_LIB}"
+fi
 
 cd "$XGDAG_DIR" || exit 1
 export PYTHONPATH="$PWD:$PWD/SubgraphX:$PWD/GraphSVX:${PYTHONPATH:-}"
