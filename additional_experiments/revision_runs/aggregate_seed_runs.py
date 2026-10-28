@@ -108,6 +108,26 @@ def read_genes(path):
         return {line.strip() for line in handle if line.strip()}
 
 
+def clamp(key, value, universe):
+    """Keep an interval bound inside the range the metric can actually take.
+
+    A t-interval is symmetric and unbounded, so with few seeds it runs past
+    the ends of the scale: mnd KI-RF has 2 usable runs, t(1) = 12.706, and the
+    lower bound came out at -7530 for a MEDIAN RANK. Ranks start at 1 and stop
+    at the universe size; recall and precision are proportions; fold
+    enrichment cannot be negative. Reporting an impossible bound invites a
+    reviewer to distrust the rest of the table, so clip to what the metric can
+    be and let the width itself show the imprecision.
+    """
+    if "rank" in key:
+        return min(max(value, 1.0), float(universe))
+    if key.startswith(("recall_", "precision_")):
+        return min(max(value, 0.0), 1.0)
+    if "fold_enrichment" in key:
+        return max(value, 0.0)
+    return value
+
+
 def percentile_ci(values, alpha=0.05):
     if not values:
         return None, None
@@ -236,16 +256,20 @@ def main():
                 record[key + "_seed_max"] = round(max(values), 6)
                 if len(values) > 1:
                     half = T95.get(len(values), 2.0) * sd / math.sqrt(len(values))
-                    record[key + "_seed_lo"] = round(mean - half, 6)
-                    record[key + "_seed_hi"] = round(mean + half, 6)
+                    record[key + "_seed_lo"] = round(
+                        clamp(key, mean - half, universe), 6)
+                    record[key + "_seed_hi"] = round(
+                        clamp(key, mean + half, universe), 6)
                 lo, hi = percentile_ci(combined[key])
                 if lo is not None:
-                    record[key + "_combined_lo"] = round(lo, 6)
-                    record[key + "_combined_hi"] = round(hi, 6)
+                    record[key + "_combined_lo"] = round(clamp(key, lo, universe), 6)
+                    record[key + "_combined_hi"] = round(clamp(key, hi, universe), 6)
                 los, his = target_only[key]
                 if los:
-                    record[key + "_target_lo"] = round(statistics.fmean(los), 6)
-                    record[key + "_target_hi"] = round(statistics.fmean(his), 6)
+                    record[key + "_target_lo"] = round(
+                        clamp(key, statistics.fmean(los), universe), 6)
+                    record[key + "_target_hi"] = round(
+                        clamp(key, statistics.fmean(his), universe), 6)
             summary.append(record)
 
     if not summary:

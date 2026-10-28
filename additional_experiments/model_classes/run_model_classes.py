@@ -76,6 +76,13 @@ PUBMED = [os.path.join(DATA, "pubmed_embeddings",
 # disease -> (2022-09 positives, post-split targets). Same files the GNN arm uses.
 DISEASES = {
     "dee": ("DEE-2022_09.txt", "DEE-2025_03_vs_2022_09.txt"),
+    # AD and AR DEE are columns in Table 1, so R1.3 and R1.4 have to cover
+    # them too - without these these analyses span 7 diseases while the main
+    # table spans 9, and a reviewer comparing the two will notice. Their
+    # 2022-09 panels use a different filename shape from the rest because
+    # they are derived as (2025-03 list) minus (diff) rather than stored.
+    "ad_dee": ("AD_DEE-2022_09.txt", "AD_DEE-2022_09_to_2025_03.txt"),
+    "ar_dee": ("AR_DEE-2022_09.txt", "AR_DEE-2022_09_to_2025_03.txt"),
     "cp": ("CP-2022-09.txt", "CP-2025_06_vs_2022_09.txt"),
     "intellectual_disability": ("Intellectual-disability-2022-09.txt",
                                 "Intellectual-disability-2025_06_vs_2022_09.txt"),
