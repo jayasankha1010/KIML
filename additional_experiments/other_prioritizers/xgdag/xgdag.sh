@@ -33,6 +33,25 @@ fi
 
 [ -d "$XGDAG_DIR" ] || { echo "[Error] XGDAG not found at $XGDAG_DIR"; exit 1; }
 
+# The torch 1.11.0+cu113 pip wheel bundles ONLY libcudart; cusparse and cublas
+# are expected from the system. Without them torch_geometric import fails with
+#     OSError: libcusparse.so.11: cannot open shared object file
+# Any CUDA 11.x module supplies it - the soname is .so.11 across the whole 11
+# series, so 11.8 satisfies code compiled against 11.3. NOTE that
+# run_revision.slurm loads CUDA/12.2.0, which does NOT work here: that
+# provides .so.12.
+#
+# Tolerate absence: the CPU environment needs none of this, and the module
+# command may not exist everywhere.
+CUDA_MODULE="${XGDAG_CUDA_MODULE:-CUDA/11.8.0}"
+if command -v module >/dev/null 2>&1; then
+    if module load "$CUDA_MODULE" 2>/dev/null; then
+        echo "[info] loaded $CUDA_MODULE"
+    else
+        echo "[info] $CUDA_MODULE unavailable; continuing (fine for the CPU env)"
+    fi
+fi
+
 # set -u off across conda activation: activate.d hooks reference unset
 # variables (MKL_INTERFACE_LAYER here, JAVA_HOME in mantis-env) and abort the
 # script under nounset.
