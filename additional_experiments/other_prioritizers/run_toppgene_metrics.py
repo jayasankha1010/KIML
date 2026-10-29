@@ -70,6 +70,13 @@ MAPPING = {
     "ToppGeneData_arthrogryposis.csv": (
         "arthrogryposis", "Arthrogryposis-2022-09.txt",
         "Arthrogryposis-2025_06_vs_2022_09.txt"),
+    # Added later than the rest: the original scrape covered aminoacidopathy,
+    # ataxia and skeletal dysplasia - which are not in the paper's nine - but
+    # missed bleeding/platelet, which is. Note the file name does not follow
+    # the pattern of the others.
+    "ToppGeneData_platelet_and_bleeding_disorder.csv": (
+        "platelet_disorder", "Bleeding_and_Platelet_Disorders-2022-09.txt",
+        "Bleeding_and_Platelet_Disorders-2026-02_vs_2022-09.txt"),
     "ToppGeneData_aminoacidopathy.csv": (
         "aminoacidopathy", "Aminoacidopathy-2022-09.txt",
         "Aminoacidopathy-2025_06_vs_2022_09.txt"),

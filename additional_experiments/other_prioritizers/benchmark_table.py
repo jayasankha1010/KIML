@@ -51,25 +51,74 @@ EXISTING = [("ToppGene", None), ("SPEOS", "GNN"), ("Mantis", "RF")]
 OURS = [("KI-GNN", "KI-GNN"), ("KI-RF", "KI-RF")]
 
 
-def load_kiml():
-    ranks, universe = {}, {}
-    sources = [(LOOKUP, PREDICTIONS, "paper_variant", "probabilities_file"),
-               (MANTIS_LOOKUP, MANTIS_PREDICTIONS, "paper_variant", "predictions_file")]
-    wanted = {a for _, a in EXISTING if a} | {a for _, a in OURS}
-    for lookup, folder, variant_col, file_col in sources:
-        if not os.path.exists(lookup):
+# Multi-seed runs, named <prefix>_<disease>_<variant>_s<seed>. Neither
+# pipeline is seeded internally, so a single run is one draw; these are all of
+# them.
+SEED_RUNS = {
+    "GNN": (PREDICTIONS, "Rev_{disease}_GNN_s{seed}_probabilities.tsv"),
+    "KI-GNN": (PREDICTIONS, "Rev_{disease}_KIGNN_s{seed}_probabilities.tsv"),
+    "RF": (os.path.join(ROOT, "external", "Mantis", "Mantis_Out"),
+           "Mantis_{disease}_RF_s{seed}/Gene-Predictions/"
+           "RandomForestClassifier.mantis-ml_predictions.csv"),
+    "KI-RF": (os.path.join(ROOT, "external", "Mantis", "Mantis_Out"),
+              "Mantis_{disease}_KI-RF_s{seed}/Gene-Predictions/"
+              "RandomForestClassifier.mantis-ml_predictions.csv"),
+}
+MAX_SEEDS = 5
+
+
+def consensus_ranking(folder, template, disease):
+    """Average each gene's rank across the available seeds.
+
+    The benchmark used to read one published prediction file per method, but
+    those are single unseeded draws - and we now know several do not
+    reproduce (platelet-disorder SPEOS was published at 6988; five reruns give
+    [1611, 2926]). Quoting them here would also contradict the multi-seed tab.
+
+    Averaging per-gene RANKS, rather than taking a mean of per-seed medians,
+    keeps a full ranking - which the common-target-set intersection and the
+    paired bootstrap both need. The cost is that the median of these averaged
+    ranks is not identical to the mean of the per-seed medians reported
+    elsewhere; they answer slightly different questions and will differ a
+    little.
+    """
+    totals, counts, universes = {}, {}, []
+    for seed in range(1, MAX_SEEDS + 1):
+        path = os.path.join(folder, template.format(disease=disease, seed=seed))
+        if not os.path.exists(path):
             continue
-        with open(lookup) as handle:
-            for row in csv.DictReader(handle, delimiter="\t"):
-                if row[variant_col] not in wanted:
-                    continue
-                path = os.path.join(folder, os.path.basename(row[file_col]))
-                if not os.path.exists(path):
-                    continue
-                r, n = rank_unseen(load_predictions(path))
-                ranks.setdefault(row["disease"], {})[row[variant_col]] = r
-                universe.setdefault(row["disease"], {})[row[variant_col]] = n
-    return ranks, universe
+        ranks, universe = rank_unseen(load_predictions(path))
+        universes.append(universe)
+        for gene, rank in ranks.items():
+            totals[gene] = totals.get(gene, 0) + rank
+            counts[gene] = counts.get(gene, 0) + 1
+    if not totals:
+        return None, None, 0
+    # Keep genes every available seed ranked, so no gene is averaged over a
+    # different number of runs than its neighbours.
+    n_seeds = max(counts.values())
+    mean_rank = {g: totals[g] / counts[g] for g in totals if counts[g] == n_seeds}
+    return mean_rank, max(universes), n_seeds
+
+
+def load_kiml():
+    """disease -> arm -> consensus per-gene ranks, averaged over seeds."""
+    ranks, universe, seeds = {}, {}, {}
+    wanted = [a for _, a in EXISTING if a] + [a for _, a in OURS]
+    diseases = sorted({d for d, _, _ in
+                       [(x[0], None, None) for x in MAPPING.values()]})
+    for arm in wanted:
+        if arm not in SEED_RUNS:
+            continue
+        folder, template = SEED_RUNS[arm]
+        for disease in diseases:
+            mean_rank, n, n_seeds = consensus_ranking(folder, template, disease)
+            if mean_rank is None:
+                continue
+            ranks.setdefault(disease, {})[arm] = mean_rank
+            universe.setdefault(disease, {})[arm] = n
+            seeds.setdefault(disease, {})[arm] = n_seeds
+    return ranks, universe, seeds
 
 
 def main():
@@ -81,7 +130,7 @@ def main():
                         default=os.path.join(HERE, "benchmark_existing_methods.tsv"))
     args = parser.parse_args()
 
-    kiml, kiml_universe = load_kiml()
+    kiml, kiml_universe, kiml_seeds = load_kiml()
     columns = EXISTING + OURS
 
     rows = []
@@ -124,6 +173,9 @@ def main():
 
         line = "{:24}{:>8}".format(disease, len(common))
         record = {"disease": disease, "n_common_targets": len(common)}
+        for label, arm in columns:
+            if arm:
+                record[label + "_n_seeds"] = kiml_seeds.get(disease, {}).get(arm, 0)
         for label, _ in columns:
             med = sorted(per_method[label][g] for g in common)[len(common) // 2]
             line += "{:>10}".format(med)
