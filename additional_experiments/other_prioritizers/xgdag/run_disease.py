@@ -63,6 +63,13 @@ def main():
     parser.add_argument("--weight-decay", type=float, default=0.0005)
     parser.add_argument("--skip-train", action="store_true",
                         help="reuse the saved model instead of retraining")
+    parser.add_argument("--extra-features", default=None,
+                        help="whitespace-separated 'gene v1 v2 ...' matrix to "
+                             "concatenate onto the six NeDBIT features, for the "
+                             "XGDAG vs XGDAG+PubMed ablation")
+    parser.add_argument("--tag", default="",
+                        help="suffix for the model and ranking names, so arms "
+                             "do not overwrite each other (e.g. pubmed, random)")
     args = parser.parse_args()
 
     disease = args.disease
@@ -91,13 +98,51 @@ def main():
         # gene symbols alone. See the module docstring.
         create_graph_from_PPI(args.ppi, disease, graph_name, from_diamond=True)
 
+    # Extra node features, for the XGDAG vs XGDAG+PubMed ablation. The six
+    # NeDBIT attribute names are a single list in CreateDatasetv2; the patch
+    # makes it read XGDAG_EXTRA_ATTRS, and from_networkx picks up whatever is
+    # named. SAGEConv takes its width from data.num_features, so nothing in
+    # the model needs changing.
+    if args.extra_features:
+        import networkx as nx
+        print("[+] adding extra features from {}".format(args.extra_features))
+        extra = {}
+        width = None
+        with open(args.extra_features) as handle:
+            for line in handle:
+                parts = line.split()
+                if len(parts) > 1:
+                    extra[parts[0]] = [float(v) for v in parts[1:]]
+                    width = width or len(parts) - 1
+
+        G_aug = nx.read_gml(graph_path)
+        names = ["xf{}".format(i) for i in range(width)]
+        zeros = [0.0] * width
+        missing = 0
+        for node in G_aug:
+            values = extra.get(node)
+            if values is None:
+                values = zeros
+                missing += 1
+            for name, value in zip(names, values):
+                G_aug.nodes[node][name] = value
+        print("    {} dims added; {} of {} nodes had no row (zero-filled)".format(
+            width, missing, G_aug.number_of_nodes()))
+
+        graph_path = os.path.join(
+            PATH_TO_GRAPHS, "{}_{}.gml".format(graph_name, args.tag or "extra"))
+        nx.write_gml(G_aug, graph_path)
+        os.environ["XGDAG_EXTRA_ATTRS"] = ",".join(names)
+        print("    wrote augmented graph -> {}".format(graph_path))
+
     print("[+] building dataset")
     # from_diamond=False: our per-disease files are in Datasets/, not
     # Datasets/Diamond_dataset/.
     dataset, G = get_dataset_from_graph(graph_path, disease, quartile=False,
                                         from_diamond=False)
+    print("    node features: {}".format(dataset.num_features))
 
-    model_name = "GraphSAGE_" + disease
+    model_name = "GraphSAGE_" + disease + (("_" + args.tag) if args.tag else "")
     if args.skip_train:
         print("[=] skipping training, loading {}".format(model_name))
         preds, _, model = predict_from_saved_model(
@@ -123,8 +168,8 @@ def main():
     # Same '_kiml_' convention the patch applies to ComputeRankingScript, so
     # nothing of the authors' is ever overwritten and the provenance is clear
     # from the filename.
-    out = os.path.join(PATH_TO_RANKINGS,
-                       "{}_kiml_xgdag_{}.txt".format(disease, args.method.lower()))
+    out = os.path.join(PATH_TO_RANKINGS, "{}_kiml{}_xgdag_{}.txt".format(
+        disease, ("_" + args.tag) if args.tag else "", args.method.lower()))
     with open(out, "w") as handle:
         for line in ranking:
             handle.write(line + "\n")

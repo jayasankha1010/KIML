@@ -102,6 +102,35 @@ print("[+] patched " + path)
 PATCH
 
 echo
+# Second file: let the attribute list be extended at run time, for the
+# XGDAG vs XGDAG+PubMed ablation. The six NeDBIT names are hardcoded in one
+# place; from_networkx reads whatever is named, and SAGEConv takes its width
+# from data.num_features, so this one line is the whole change needed.
+DATASET="$XGDAG_DIR/CreateDatasetv2.py"
+if [ -f "$DATASET" ] && ! grep -q "XGDAG_EXTRA_ATTRS" "$DATASET"; then
+    cp "$DATASET" "$DATASET.orig"
+    python3 - "$DATASET" <<'PATCH2'
+import sys
+path = sys.argv[1]
+src = open(path).read()
+old = "\t\tattributes = ['degree', 'ring', 'NetRank', 'NetShort', 'HeatDiff', 'InfoDiff']"
+new = (old + "\n"
+       "\t\t# KIML: allow extra node features to be appended at run time, for\n"
+       "\t\t# the XGDAG vs XGDAG+PubMed ablation. Unset by default, so the\n"
+       "\t\t# published behaviour is unchanged.\n"
+       "\t\timport os as _os\n"
+       "\t\t_extra = _os.environ.get('XGDAG_EXTRA_ATTRS', '')\n"
+       "\t\tif _extra:\n"
+       "\t\t\tattributes = attributes + [a for a in _extra.split(',') if a]\n"
+       "\t\t\tprint('[KIML] node attributes:', len(attributes))")
+if old not in src:
+    print("[Error] attribute list not found in CreateDatasetv2.py")
+    sys.exit(1)
+open(path, "w").write(src.replace(old, new, 1))
+print("[+] patched " + path)
+PATCH2
+fi
+
 echo "Changed:"
 echo "  model   GraphSAGE_<id>_diamond                 -> GraphSAGE_<id>"
 echo "  graph   grafo_diamond_nedbit_<id>.gml          -> grafo_nedbit_<id>.gml"
