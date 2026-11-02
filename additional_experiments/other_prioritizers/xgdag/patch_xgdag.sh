@@ -41,20 +41,23 @@ TARGET="$XGDAG_DIR/ComputeRankingScript.py"
 [ -f "$TARGET" ] || { echo "[Error] not found: $TARGET"; exit 1; }
 
 if [ "${1:-}" = "--revert" ]; then
-    if [ -f "$TARGET.orig" ]; then
-        mv "$TARGET.orig" "$TARGET"
-        echo "[+] reverted $TARGET"
-    else
-        echo "[=] no backup to revert"
-    fi
+    for f in "$TARGET" "$XGDAG_DIR/CreateDatasetv2.py"; do
+        if [ -f "$f.orig" ]; then
+            mv "$f.orig" "$f"
+            echo "[+] reverted $f"
+        else
+            echo "[=] no backup to revert for $f"
+        fi
+    done
     exit 0
 fi
 
+# Each file has its own guard. An earlier version exited here when the first
+# file was already patched, so a clone patched before the second block existed
+# never got it - and the PubMed arms silently trained on six features.
 if grep -q "KIML: switched to the standard" "$TARGET"; then
-    echo "[=] already patched"
-    exit 0
-fi
-
+    echo "[=] already patched: $TARGET"
+else
 cp "$TARGET" "$TARGET.orig"
 
 python3 - "$TARGET" <<'PATCH'
@@ -100,6 +103,7 @@ for old, new in subs:
 open(path, "w").write(src)
 print("[+] patched " + path)
 PATCH
+fi
 
 echo
 # Second file: let the attribute list be extended at run time, for the
@@ -107,7 +111,11 @@ echo
 # place; from_networkx reads whatever is named, and SAGEConv takes its width
 # from data.num_features, so this one line is the whole change needed.
 DATASET="$XGDAG_DIR/CreateDatasetv2.py"
-if [ -f "$DATASET" ] && ! grep -q "XGDAG_EXTRA_ATTRS" "$DATASET"; then
+if [ ! -f "$DATASET" ]; then
+    echo "[Error] not found: $DATASET"; exit 1
+elif grep -q "XGDAG_EXTRA_ATTRS" "$DATASET"; then
+    echo "[=] already patched: $DATASET"
+else
     cp "$DATASET" "$DATASET.orig"
     python3 - "$DATASET" <<'PATCH2'
 import sys

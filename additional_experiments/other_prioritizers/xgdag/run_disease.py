@@ -141,6 +141,14 @@ def main():
     dataset, G = get_dataset_from_graph(graph_path, disease, quartile=False,
                                         from_diamond=False)
     print("    node features: {}".format(dataset.num_features))
+    # Stop before two hours of training if the extra block did not make it in.
+    # That happens when CreateDatasetv2.py is unpatched: the augmented graph is
+    # written, but only the six NeDBIT names are read from it.
+    if args.extra_features and dataset.num_features != 6 + width:
+        print("[Error] expected {} node features, got {}. Is CreateDatasetv2.py "
+              "patched? Run patch_xgdag.sh and check for XGDAG_EXTRA_ATTRS in "
+              "it.".format(6 + width, dataset.num_features))
+        return 1
 
     model_name = "GraphSAGE_" + disease + (("_" + args.tag) if args.tag else "")
     if args.skip_train:
