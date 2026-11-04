@@ -52,6 +52,10 @@ from score_xgdag import read_genes, read_ranking  # noqa: E402
 SCALE = 10000
 ARMS = [("baseline", ""), ("pubmed", "_pubmed"), ("random", "_random")]
 CONTRASTS = [("pubmed", "baseline"), ("random", "baseline"), ("pubmed", "random")]
+# Further baseline runs (six features, different random initialisation), used
+# if present. XGDAG is unseeded, so one baseline run is one draw; differences
+# BETWEEN baseline runs are the noise floor an ablation contrast must clear.
+REPLICATES = [("rep2", "_rep2"), ("rep3", "_rep3")]
 # Rank-scale metrics only; recall@k and precision@k assume a shared universe.
 RANK_KEYS = ("median_rank_unseen", "mean_rank_unseen")
 KEYS = ["median_rank_unseen", "mean_rank_unseen", "fold_enrichment_top_1_pct",
@@ -113,24 +117,34 @@ def main():
     targets = read_genes(os.path.join(HERE, "seeds",
                                       "{}_targets.txt".format(args.disease)))
     rankings = {}
-    for arm, tag in ARMS:
+    arms = list(ARMS)
+    for arm, tag in ARMS + REPLICATES:
         path = os.path.join(args.rankings, "{}_kiml{}_xgdag_{}.txt".format(
             args.disease, tag, args.method))
         if not os.path.exists(path):
+            if (arm, tag) in REPLICATES:
+                continue
             raise SystemExit("not found: {}".format(path))
         rankings[arm] = read_ranking(path)
+        if (arm, tag) in REPLICATES:
+            arms.append((arm, tag))
+
+    baselines = ["baseline"] + [a for a, _ in REPLICATES if a in rankings]
+    noise = [(b, a) for i, a in enumerate(baselines) for b in baselines[i + 1:]]
+    contrasts = [(a, b, "ablation") for a, b in CONTRASTS] + \
+                [(a, b, "noise") for a, b in noise]
 
     rows = []
     print("disease {}  -  {} targets in the BioGRID namespace\n".format(
         args.disease, len(targets)))
 
     # Coverage and per-arm scores.
-    print("{:10}{:>9}{:>10}{:>12}{:>12}{:>12}".format(
-        "arm", "genes", "reached", "rankable", "penalised", "FE top10%"))
-    print("{:10}{:>9}{:>10}{:>12}{:>12}{:>12}".format(
-        "", "ranked", "targets", "pctile", "pctile", "penalised"))
-    print("-" * 65)
-    for arm, _ in ARMS:
+    print("{:10}{:>9}{:>10}{:>12}{:>12}{:>12}{:>12}".format(
+        "arm", "genes", "reached", "rankable", "penalised", "penalised", "FE top10%"))
+    print("{:10}{:>9}{:>10}{:>12}{:>12}{:>12}{:>12}".format(
+        "", "ranked", "targets", "median", "median", "mean", "penalised"))
+    print("-" * 77)
+    for arm, _ in arms:
         ranking = rankings[arm]
         reached = [g for g in targets if g in ranking]
         record = {"disease": args.disease, "row": "arm", "arm": arm,
@@ -152,8 +166,9 @@ def main():
                     record["{}_{}_hi".format(variant, key)] = round(hi, 4)
             cells.append(record["{}_median_rank_unseen".format(variant)])
         rows.append(record)
-        print("{:10}{:>9}{:>10}{:>12.3f}{:>12.3f}{:>12.2f}".format(
+        print("{:10}{:>9}{:>10}{:>12.3f}{:>12.3f}{:>12.3f}{:>12.2f}".format(
             arm, len(ranking), len(reached), cells[0], cells[1],
+            record["penalised_mean_rank_unseen"],
             record["penalised_fold_enrichment_top_10_pct"]))
 
     # Did the extra features change the model at all?
@@ -161,7 +176,9 @@ def main():
     print("{:22}{:>10}{:>9}{:>12}{:>12}".format(
         "pair", "spearman", "shared", "top-100", "top-500"))
     print("-" * 65)
-    for a, b in CONTRASTS:
+    for a, b, kind in contrasts:
+        if kind == "noise" and (a, b) == noise[0]:
+            print("  - baseline vs baseline (run-to-run) -")
         rho, n = spearman(rankings[a], rankings[b])
         o100 = top_overlap(rankings[a], rankings[b], 100)
         o500 = top_overlap(rankings[a], rankings[b], 500)
@@ -170,7 +187,7 @@ def main():
         rows.append({"disease": args.disease, "row": "similarity",
                      "arm": "{} vs {}".format(a, b), "spearman": round(rho, 4),
                      "shared_genes": n, "top100_overlap": o100,
-                     "top500_overlap": o500})
+                     "top500_overlap": o500, "kind": kind})
 
     # Paired contrasts on the common percentile scale.
     print("\nPaired contrasts (A - B; ranks as percentiles, negative favours A;")
@@ -182,13 +199,16 @@ def main():
             "contrast", "n", "median pctile [95% CI]", "mean pctile [95% CI]",
             "FE top10% [95% CI]"))
         print("  " + "-" * 101)
-        for a, b in CONTRASTS:
+        for a, b, kind in contrasts:
+            if kind == "noise" and (a, b) == noise[0]:
+                print("  - noise floor: baseline vs baseline -")
             ra = scaled(rankings[a], targets, penalise)
             rb = scaled(rankings[b], targets, penalise)
             diffs, n = paired_bootstrap(ra, rb, SCALE, SCALE,
                                         args.n_boot, args.seed)
             record = {"disease": args.disease, "row": "contrast",
-                      "arm": "{} - {}".format(a, b), "variant": variant, "n": n}
+                      "arm": "{} - {}".format(a, b), "variant": variant, "n": n,
+                      "kind": kind}
             for key in KEYS:
                 if key not in diffs:
                     continue
