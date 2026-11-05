@@ -61,9 +61,20 @@ FEATURE_FILES = {
 NETWORKS = [os.path.join(DATA, "networks", "network_pathway.txt"),
             os.path.join(DATA, "networks", "gene_gene_covaries.txt")]
 
+# All nine Table 1 diseases. DEE and CP were run first; the rest follow so
+# R1.5 spans the same diseases as the main table.
 DISEASES = {
     "dee": ("DEE-2022_09.txt", "DEE-2025_03_vs_2022_09.txt"),
+    "ad_dee": ("AD_DEE-2022_09.txt", "AD_DEE-2022_09_to_2025_03.txt"),
+    "ar_dee": ("AR_DEE-2022_09.txt", "AR_DEE-2022_09_to_2025_03.txt"),
     "cp": ("CP-2022-09.txt", "CP-2025_06_vs_2022_09.txt"),
+    "intellectual_disability": ("Intellectual-disability-2022-09.txt",
+                                "Intellectual-disability-2025_06_vs_2022_09.txt"),
+    "microcephaly": ("Microcephaly-2022-09.txt", "Microcephaly-2025_06_vs_2022_09.txt"),
+    "arthrogryposis": ("Arthrogryposis-2022-09.txt", "Arthrogryposis-2025_06_vs_2022_09.txt"),
+    "platelet_disorder": ("Bleeding_and_Platelet_Disorders-2022-09.txt",
+                          "Bleeding_and_Platelet_Disorders-2026-02_vs_2022-09.txt"),
+    "mnd": ("MND-2022-09.txt", "MND-2025_06_vs_2022_09.txt"),
 }
 
 # (name, feature blocks, graph, fusion). Blocks are fused pairwise when the

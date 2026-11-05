@@ -47,8 +47,14 @@ DISEASES_DIR = os.path.join(ROOT, "data", "kiml_data", "diseases")
 
 TARGETS = {
     "dee": "DEE-2025_03_vs_2022_09.txt",
+    "ad_dee": "AD_DEE-2022_09_to_2025_03.txt",
+    "ar_dee": "AR_DEE-2022_09_to_2025_03.txt",
     "cp": "CP-2025_06_vs_2022_09.txt",
     "intellectual_disability": "Intellectual-disability-2025_06_vs_2022_09.txt",
+    "microcephaly": "Microcephaly-2025_06_vs_2022_09.txt",
+    "arthrogryposis": "Arthrogryposis-2025_06_vs_2022_09.txt",
+    "platelet_disorder": "Bleeding_and_Platelet_Disorders-2026-02_vs_2022-09.txt",
+    "mnd": "MND-2025_06_vs_2022_09.txt",
 }
 
 # variant -> (label, node features, graph)
