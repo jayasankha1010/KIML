@@ -133,6 +133,12 @@ VARIANTS = {
     # cutoff-restricted corpus. If it matches MiniLM the conclusion sharpens
     # from "classical methods suffice" to "pretraining adds nothing".
     "KIGNN-DOC2VEC": ("./extensions/datasets_doc2vec.json", KG, "GeneNetwork", 2),
+    # GenePT: ada-002 embeddings of the NCBI Gene summaries (1,536 dims) in place
+    # of the PubMed embeddings; expression features and KG edges as in KIGNN.
+    # Built by text_representations/build_genept_features.slurm. Both the
+    # summaries and ada-002 postdate the cutoff, so this compares text sources
+    # rather than giving a prospective result.
+    "KIGNN-GENEPT": ("./extensions/datasets_genept.json", KG, "GeneNetwork", 2),
 }
 
 # Every variant above except KIMLP uses the published 2 message-passing layers.

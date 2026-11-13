@@ -63,16 +63,29 @@ ENV_NAME="speos_kiml"
 
 mkdir -p logs
 
-if [ ! -f "$MANIFEST" ]; then
-    echo "[Error] $MANIFEST not found. Run make_configs.py first."
-    exit 1
-fi
-
-# Array index -> config name. Index is 0-based, sed is 1-based.
-EXP_NAME=$(sed -n "$((SLURM_ARRAY_TASK_ID + 1))p" "$MANIFEST")
-if [ -z "$EXP_NAME" ]; then
-    echo "[Error] No manifest entry for array index $SLURM_ARRAY_TASK_ID."
-    exit 1
+# A single named run, outside the manifest:
+#   sbatch --export=ALL,EXP_NAME=Rev_dee_KIGNN-GENEPT_s1 run_revision.slurm
+# The manifest on the cluster is regenerated per batch and is not what git
+# holds, so an index computed from a local copy can point at the wrong config.
+# Naming the config avoids that for one-off runs.
+if [ -n "${EXP_NAME:-}" ]; then
+    echo "[info] config named by EXP_NAME; manifest not used"
+else
+    if [ ! -f "$MANIFEST" ]; then
+        echo "[Error] $MANIFEST not found. Run make_configs.py first."
+        exit 1
+    fi
+    if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
+        echo "[Error] Submit with --array=<index>, or name the config with"
+        echo "        --export=ALL,EXP_NAME=<config name>."
+        exit 1
+    fi
+    # Array index -> config name. Index is 0-based, sed is 1-based.
+    EXP_NAME=$(sed -n "$((SLURM_ARRAY_TASK_ID + 1))p" "$MANIFEST")
+    if [ -z "$EXP_NAME" ]; then
+        echo "[Error] No manifest entry for array index $SLURM_ARRAY_TASK_ID."
+        exit 1
+    fi
 fi
 
 # Config name encodes the disease, which evaluate_results.py needs separately.
@@ -92,7 +105,7 @@ fi
 
 echo "========================================"
 echo " KIML revision run"
-echo "   array task : ${SLURM_ARRAY_TASK_ID}"
+echo "   array task : ${SLURM_ARRAY_TASK_ID:-none}"
 echo "   config     : ${EXP_NAME}"
 echo "   disease    : ${DATASET}"
 echo "   started    : $(date)"

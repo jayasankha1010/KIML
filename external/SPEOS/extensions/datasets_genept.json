@@ -1,0 +1,29 @@
+[
+  {
+    "name": "ChildExpression",
+    "identifier": "hgnc",
+    "function": "preprocess_mydata_expression",
+    "args": [],
+    "kwargs": {
+      "path": "./../../data/kiml_data/ahbd/child_expression.txt"
+    }
+  },
+  {
+    "name": "PrebirthExpression",
+    "identifier": "hgnc",
+    "function": "preprocess_mydata_expression",
+    "args": [],
+    "kwargs": {
+      "path": "./../../data/kiml_data/ahbd/prebirth_expression.txt"
+    }
+  },
+  {
+    "name": "GenePTEmbeddings",
+    "identifier": "hgnc",
+    "function": "preprocess_mydata_expression",
+    "args": [],
+    "kwargs": {
+      "path": "./../../additional_experiments/text_representations/genept_ada002_1536d_speos_symbols.txt"
+    }
+  }
+]
